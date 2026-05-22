@@ -271,6 +271,18 @@ body { background:var(--bg); color:var(--text); font-family:'Nunito',sans-serif;
 .phrase-display.ko { font-family:'Noto Sans KR',sans-serif; }
 .phrase-display.ja { font-family:'Noto Sans JP',sans-serif; }
 
+/* ── WORD WEB ── */
+.ww-list { display:flex; flex-direction:column; gap:.5rem; }
+.ww-word-row { display:flex; align-items:center; justify-content:space-between; gap:.8rem; background:var(--card2); border:1.5px solid var(--border); border-radius:10px; padding:.75rem 1rem; cursor:pointer; transition:all .25s; flex-wrap:wrap; }
+.ww-word-row:hover { border-color:var(--gold); background:rgba(245,200,66,.06); transform:translateX(3px); }
+.ww-row-left { display:flex; flex-direction:column; gap:.1rem; min-width:80px; }
+.ww-row-right { flex:1; text-align:right; }
+.ww-foreign { font-size:1.4rem; font-weight:700; color:var(--gold2); line-height:1.2; }
+.ww-roman { font-size:.68rem; color:var(--sky); font-style:italic; }
+.ww-meaning { font-size:.72rem; color:var(--muted); font-weight:700; }
+.ww-highlight-chip { background:var(--card2); border:1.5px solid var(--border); border-radius:10px; padding:.6rem .8rem; cursor:pointer; transition:all .25s; text-align:center; min-width:72px; }
+.ww-highlight-chip:hover { border-color:var(--teal); background:rgba(56,201,176,.08); transform:translateY(-2px); }
+
   .quiz-options{grid-template-columns:1fr}
   .match-grid{grid-template-columns:1fr 1fr}
   .word-chip .foreign{font-size:1rem}
@@ -310,6 +322,7 @@ body { background:var(--bg); color:var(--text); font-family:'Nunito',sans-serif;
   <button class="tab" onclick="showTab('match',this)">🔗 Match Game</button>
   <button class="tab" onclick="showTab('fill',this)">✏️ Fill Blank</button>
   <button class="tab" onclick="showTab('speak',this)">🎤 Speak It</button>
+  <button class="tab" onclick="showTab('wordweb',this)">🕸️ Word Web</button>
 </div>
 
 <div id="tabContent"></div>
@@ -838,6 +851,7 @@ function renderTab(){
   else if(activeTab === 'match') { content.innerHTML = renderMatchHTML(); }
   else if(activeTab === 'fill') content.innerHTML = renderFill();
   else if(activeTab === 'speak') content.innerHTML = renderSpeak();
+  else if(activeTab === 'wordweb') content.innerHTML = renderWordWeb();
 }
 
 // ── EXPLORE TAB ───────────────────────────────────────────────────────────────
@@ -1499,6 +1513,203 @@ function pronunciationScore(target, heard){
   // length penalty — if wildly different length, cap score
   const lenRatio = Math.min(tChars.length,hChars.length)/Math.max(tChars.length,hChars.length,1);
   return Math.round(Math.min(99, f1*100*0.8 + lenRatio*20));
+}
+
+// ── WORD WEB ──────────────────────────────────────────────────────────────────
+let wordWebState = { selectedWord: null, selectedLang: null };
+let wwQuizPicked = new Set();
+let wwQuizDone = false;
+
+function buildWordIndex(){
+  const index = { zh:{}, ko:{}, ja:{} };
+  VERSES.forEach((v, vi) => {
+    ['zh','ko','ja'].forEach(l => {
+      const ld = v.langs[l];
+      ld.words.forEach(w => {
+        if(!index[l][w.w]) index[l][w.w] = [];
+        if(!index[l][w.w].find(e=>e.verseIdx===vi)){
+          index[l][w.w].push({ verseIdx:vi, ref:v.ref, cat:v.cat, en:v.en, snippet:ld.full, roman:w.r, meaning:w.m, pos:w.pos });
+        }
+      });
+    });
+  });
+  return index;
+}
+
+function getSharedWords(index, l){
+  return Object.entries(index[l])
+    .filter(([w, entries]) => entries.length >= 2)
+    .sort((a,b) => b[1].length - a[1].length);
+}
+
+function renderWordWeb(){
+  const index = buildWordIndex();
+  wwQuizPicked = new Set(); wwQuizDone = false;
+  const langName = {zh:'Chinese 🇨🇳', ko:'Korean 🇰🇷', ja:'Japanese 🇯🇵'}[lang];
+  const fontMap = {zh:'Noto Sans SC', ko:'Noto Sans KR', ja:'Noto Sans JP'};
+  const font = fontMap[lang];
+  const catColor = {GOSPEL:'var(--sky)',STRENGTH:'var(--gold)',PEACE:'var(--teal)',LOVE:'var(--rose)'};
+
+  if(wordWebState.selectedWord && wordWebState.selectedLang === lang){
+    return renderWordDetail(index, wordWebState.selectedWord, lang, font, catColor);
+  }
+
+  const shared = getSharedWords(index, lang);
+  const currentWords = VERSES[verseIdx].langs[lang].words;
+  const crossWords = currentWords.filter(w => (index[lang][w.w]||[]).length >= 2);
+
+  const crossHTML = crossWords.length ? crossWords.map(w => {
+    const others = (index[lang][w.w]||[]).filter(e=>e.verseIdx!==verseIdx);
+    return `<div class="ww-highlight-chip" onclick="selectWebWord('${w.w.replace(/'/g,"\\'")}')">
+      <div style="display:flex;align-items:center;gap:.35rem">
+        <span style="font-family:'${font}',sans-serif;font-size:1.2rem;font-weight:700">${w.w}</span>
+        <button class="chip-speak" onclick="event.stopPropagation();speak('${w.w.replace(/'/g,"\\'")}','${lang}',this)">${speakIcon()}</button>
+      </div>
+      <div style="font-size:.65rem;color:var(--gold2);margin-top:.15rem">${w.m}</div>
+      <div style="font-size:.6rem;color:var(--teal);margin-top:.1rem">🔗 in ${others.length+1} verses</div>
+    </div>`;
+  }).join('') : `<div style="font-size:.82rem;color:var(--muted);font-style:italic">All words unique to this verse.</div>`;
+
+  const listHTML = shared.length ? shared.map(([w, entries]) => {
+    const s = entries[0];
+    const refs = entries.map(e=>`<span style="font-size:.62rem;padding:.12rem .4rem;border-radius:5px;background:${catColor[e.cat]||'var(--border)'}22;color:${catColor[e.cat]||'var(--muted)'};border:1px solid ${catColor[e.cat]||'var(--border)'}55;font-weight:800">${e.ref}</span>`).join(' ');
+    return `<div class="ww-word-row" onclick="selectWebWord('${w.replace(/'/g,"\\'")}')">
+      <div class="ww-row-left">
+        <div style="display:flex;align-items:center;gap:.4rem">
+          <span class="ww-foreign" style="font-family:'${font}',sans-serif">${w}</span>
+          <button class="chip-speak" onclick="event.stopPropagation();speak('${w.replace(/'/g,"\\'")}','${lang}',this)">${speakIcon()}</button>
+        </div>
+        <span class="ww-roman">${s.roman}</span>
+        <span class="ww-meaning">${s.meaning}</span>
+      </div>
+      <div class="ww-row-right">
+        <div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-bottom:.25rem">${refs}</div>
+        <div style="font-size:.62rem;color:var(--muted)">in ${entries.length} verses — tap to explore →</div>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty">No shared words found.</div>`;
+
+  return `<div class="section-card">
+    <div class="section-title">🕸️ WORD WEB — ${langName}</div>
+    <div style="font-size:.82rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">
+      Words that appear in <strong style="color:var(--text)">multiple verses</strong> build the fastest vocabulary.
+      Tap any word to see every verse it lives in — and quiz yourself on finding it.
+    </div>
+    <div style="background:var(--card2);border-radius:10px;padding:1rem;margin-bottom:1.2rem;border:1px solid var(--border)">
+      <div style="font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.15em;color:var(--gold);margin-bottom:.6rem">
+        ✦ FROM ${VERSES[verseIdx].ref} — WORDS FOUND IN OTHER VERSES TOO
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.5rem">${crossHTML}</div>
+    </div>
+    <div style="font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.15em;color:var(--gold);margin-bottom:.6rem">
+      ✦ FULL SHARED WORD LIBRARY
+    </div>
+    <div class="ww-list">${listHTML}</div>
+  </div>`;
+}
+
+function selectWebWord(w){
+  wordWebState.selectedWord = w;
+  wordWebState.selectedLang = lang;
+  wwQuizPicked = new Set(); wwQuizDone = false;
+  document.getElementById('tabContent').innerHTML = renderWordWeb();
+}
+
+function clearWebWord(){
+  wordWebState.selectedWord = null;
+  document.getElementById('tabContent').innerHTML = renderWordWeb();
+}
+
+function renderWordDetail(index, w, l, font, catColor){
+  const entries = index[l][w] || [];
+  const sample = entries[0];
+  const posClr = {name:'var(--tag-name)',verb:'var(--tag-verb)',noun:'var(--tag-noun)',pron:'var(--tag-pron)',adj:'var(--tag-adj)',prep:'var(--tag-prep)',conj:'var(--tag-conj)',particle:'var(--tag-particle)',other:'var(--muted)'};
+
+  function highlight(text, word){
+    return text.replace(new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'),
+      `<mark style="background:rgba(245,200,66,.22);color:var(--gold2);border-radius:3px;padding:0 .15rem;font-weight:700">${word}</mark>`);
+  }
+
+  const versePanels = entries.map(e => `
+    <div style="background:var(--card2);border-radius:10px;padding:1rem 1.1rem;margin-bottom:.8rem;border-left:3px solid ${catColor[e.cat]||'var(--teal)'}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.45rem;flex-wrap:wrap;gap:.35rem">
+        <span style="font-family:'Cinzel',serif;font-size:.82rem;color:${catColor[e.cat]||'var(--gold)'};letter-spacing:.1em">${e.ref}</span>
+        <span style="font-size:.6rem;font-weight:800;padding:.12rem .45rem;border-radius:5px;background:${catColor[e.cat]||'var(--border)'}22;color:${catColor[e.cat]||'var(--muted)'}">${e.cat}</span>
+        <button class="speak-btn" onclick="speak('${e.snippet.replace(/'/g,"\\'")}','${l}',this)" style="font-size:.65rem;padding:.2rem .45rem">${speakIcon()} Hear verse</button>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted);font-style:italic;margin-bottom:.5rem;line-height:1.6">${e.en}</div>
+      <div style="font-family:'${font}',sans-serif;font-size:1.05rem;line-height:2">${highlight(e.snippet, w)}</div>
+    </div>`).join('');
+
+  const allRefs = VERSES.map(v=>v.ref);
+  const correctRefs = entries.map(e=>e.ref);
+  const wrongRefs = allRefs.filter(r=>!correctRefs.includes(r)).sort(()=>Math.random()-.5).slice(0,2);
+  const quizOpts = [...correctRefs,...wrongRefs].sort(()=>Math.random()-.5);
+  const correctsJSON = JSON.stringify(correctRefs).replace(/"/g,"'");
+
+  return `<div class="section-card">
+    <button class="nav-btn" onclick="clearWebWord()" style="margin-bottom:1rem;font-size:.75rem;padding:.35rem .8rem">← Word Web</button>
+    <div style="display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)">
+      <span style="font-family:'${font}',sans-serif;font-size:2.8rem;font-weight:700;color:var(--gold2);line-height:1">${w}</span>
+      <button class="speak-btn" onclick="speak('${w.replace(/'/g,"\\'")}','${l}',this)">${speakIcon()} Say it</button>
+      <div>
+        <div style="font-size:.88rem;color:var(--sky);font-style:italic">${sample?.roman||''}</div>
+        <div style="font-size:.95rem;color:var(--gold);font-weight:700">${sample?.meaning||''}</div>
+        <span class="pos-tag pos-${sample?.pos||'other'}" style="margin-top:.25rem;display:inline-block">${(sample?.pos||'').toUpperCase()}</span>
+      </div>
+    </div>
+
+    <div style="background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.18);border-radius:8px;padding:.8rem 1rem;margin-bottom:1.2rem;font-size:.82rem;color:var(--muted);line-height:1.75">
+      🧠 <strong style="color:var(--text)">Neuroplasticity note:</strong>
+      This word appears in <strong style="color:var(--gold)">${entries.length} of your ${VERSES.length} verses</strong>.
+      Each time your eye finds it highlighted, the same recognition pathway fires and gets stronger —
+      just like the London taxi driver study. One word, many verses, one growing network.
+    </div>
+
+    <div style="font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.15em;color:var(--gold);margin-bottom:.7rem">
+      ✦ "${w}" HIGHLIGHTED IN ALL ${entries.length} VERSE${entries.length>1?'S':''}
+    </div>
+    ${versePanels}
+
+    <div style="margin-top:1.2rem;background:var(--card2);border-radius:10px;padding:1rem 1.1rem;border:1.5px solid rgba(168,125,232,.25)">
+      <div style="font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.15em;color:var(--violet);margin-bottom:.6rem">
+        🎯 CROSS-VERSE QUIZ — Which verses contain "${w}"? Tap all that apply.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem" id="wwQuizOpts">
+        ${quizOpts.map(ref=>`
+          <button class="quiz-opt" id="wwopt-${ref.replace(/[^a-z0-9]/gi,'')}"
+            onclick="wwQuizPick('${ref.replace(/'/g,"\\'")}','${correctsJSON}')">
+            ${ref}
+          </button>`).join('')}
+      </div>
+      <div id="wwQuizFeedback" style="margin-top:.6rem;font-size:.82rem;font-weight:700;display:none"></div>
+    </div>
+  </div>`;
+}
+
+function wwQuizPick(ref, correctsJSON){
+  if(wwQuizDone) return;
+  const corrects = JSON.parse(correctsJSON.replace(/'/g,'"'));
+  wwQuizPicked.add(ref);
+  const isCorrect = corrects.includes(ref);
+  const btn = document.getElementById('wwopt-'+ref.replace(/[^a-z0-9]/gi,''));
+  if(btn) btn.classList.add(isCorrect ? 'correct' : 'wrong');
+  const fb = document.getElementById('wwQuizFeedback');
+  const foundSoFar = [...wwQuizPicked].filter(p=>corrects.includes(p)).length;
+  const allFound = foundSoFar === corrects.length;
+  if(allFound){
+    wwQuizDone = true;
+    corrects.forEach(c=>{ const b=document.getElementById('wwopt-'+c.replace(/[^a-z0-9]/gi,'')); if(b) b.classList.add('correct'); });
+    const clean = wwQuizPicked.size === corrects.length;
+    if(fb){ fb.style.display='block'; fb.style.color=clean?'var(--green)':'var(--gold)';
+      fb.textContent = clean ? `🌟 Perfect! All ${corrects.length} verse${corrects.length>1?'s':''} found! +20 XP` : `✅ Complete! Found in: ${corrects.join(', ')} +10 XP`; }
+    addXP(clean?20:10);
+  } else if(!isCorrect){
+    if(fb){ fb.style.display='block'; fb.style.color='var(--rose)'; fb.textContent=`❌ Not in that verse — ${corrects.length-foundSoFar} more to find!`; }
+    setTimeout(()=>{ if(fb&&!wwQuizDone) fb.style.display='none'; },1800);
+  } else {
+    if(fb){ fb.style.display='block'; fb.style.color='var(--teal)'; fb.textContent=`✓ Yes! ${corrects.length-foundSoFar} more verse${corrects.length-foundSoFar!==1?'s':''} to find…`; }
+  }
 }
 
 // ── BOOT ────────────────────────────────────────────────────────────────────
