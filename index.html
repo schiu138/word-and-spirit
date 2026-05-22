@@ -1246,6 +1246,7 @@ function renderSpeak(){
       <div class="waveform idle" id="waveform">
         ${Array(9).fill('<div class="wave-bar"></div>').join('')}
       </div>
+      <div id="speakStatus" style="font-size:.75rem;min-height:1.2rem;text-align:center;margin:.2rem 0 .4rem;color:var(--muted);font-weight:700;transition:color .3s;"></div>
       <div class="result-block" id="resultBlock">
         <div class="result-label" id="resultLabel"></div>
         <div class="result-score" id="resultScore"></div>
@@ -1267,6 +1268,7 @@ function renderSpeak(){
       <div class="waveform idle" id="waveform">
         ${Array(9).fill('<div class="wave-bar"></div>').join('')}
       </div>
+      <div id="speakStatus" style="font-size:.75rem;min-height:1.2rem;text-align:center;margin:.2rem 0 .4rem;color:var(--muted);font-weight:700;transition:color .3s;"></div>
       <div class="result-block" id="resultBlock">
         <div class="result-label" id="resultLabel"></div>
         <div class="result-score" id="resultScore"></div>
@@ -1323,17 +1325,18 @@ function startRecording(target, langKey){
   const rec = new SpeechRecognition();
   rec.lang = LANG_CODES[langKey] || 'zh-CN';
   rec.continuous = false;
-  rec.interimResults = false;
+  rec.interimResults = true;   // show interim so user sees activity
   rec.maxAlternatives = 5;
   speakState.recognition = rec;
   speakState.recording = true;
+  let gotResult = false;
 
   const micBtn = document.getElementById('micBtn');
   const micLabel = document.getElementById('micLabel');
   const waveform = document.getElementById('waveform');
   const speakCard = document.getElementById('speakCard');
   if(micBtn){ micBtn.classList.add('recording'); micBtn.textContent='⏹'; }
-  if(micLabel) micLabel.textContent = 'LISTENING…';
+  if(micLabel) micLabel.textContent = 'LISTENING… speak now';
   if(waveform){ waveform.classList.remove('idle'); waveform.classList.add('active'); }
   if(speakCard) speakCard.classList.add('listening');
 
@@ -1341,28 +1344,85 @@ function startRecording(target, langKey){
   const rb = document.getElementById('resultBlock');
   if(rb){ rb.classList.remove('show','great','good','retry'); }
 
+  // status log so user can see what's happening
+  setStatus('🎙️ Mic open — say the word now…', 'var(--sky)');
+
+  rec.onstart = () => {
+    setStatus('🎙️ Listening… say it clearly!', 'var(--teal)');
+  };
+
+  rec.onspeechstart = () => {
+    setStatus('🔊 Speech detected!', 'var(--green)');
+  };
+
+  rec.onspeechend = () => {
+    setStatus('⏳ Processing…', 'var(--gold)');
+  };
+
   rec.onresult = (e) => {
-    const results = Array.from(e.results[0]);
-    const heard = results.map(r=>r.transcript.trim()).join(' | ');
-    const best = results[0].transcript.trim();
-    showPronResult(target, best, heard, langKey);
+    // grab the best final result, or last interim if nothing final
+    let best = '';
+    let allHeard = '';
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      if(e.results[i].isFinal){
+        const alts = Array.from(e.results[i]);
+        best = alts[0].transcript.trim();
+        allHeard = alts.map(a=>a.transcript.trim()).join(' | ');
+        gotResult = true;
+      } else {
+        // show interim transcript live in status
+        const interim = e.results[i][0].transcript;
+        setStatus(`🔊 Hearing: "${interim}"`, 'var(--teal)');
+      }
+    }
+    if(gotResult && best){
+      showPronResult(target, best, allHeard, langKey);
+    }
   };
 
   rec.onerror = (e) => {
     resetMicUI();
-    const rb = document.getElementById('resultBlock');
-    if(rb){
-      rb.className='result-block retry show';
-      rb.querySelector('.result-label').textContent = '⚠️ Could not hear you';
-      rb.querySelector('.result-score').textContent = '';
-      rb.querySelector('.result-heard').innerHTML = `Error: ${e.error}. Check mic permissions and try again.`;
-      rb.querySelector('.score-bar-fill').style.width='0%';
+    let msg = '';
+    switch(e.error){
+      case 'no-speech':    msg = 'No speech detected. Speak louder and closer to mic.'; break;
+      case 'not-allowed':  msg = 'Mic blocked. Click the 🔒 icon in the address bar → Allow microphone.'; break;
+      case 'network':      msg = 'Network error. Speech recognition needs internet.'; break;
+      case 'aborted':      msg = 'Recording stopped.'; break;
+      default:             msg = `Error: ${e.error}. Try again.`;
+    }
+    setStatus('❌ ' + msg, 'var(--rose)');
+    showResultError(msg);
+  };
+
+  rec.onend = () => {
+    resetMicUI();
+    if(!gotResult){
+      setStatus('⚠️ Nothing heard — try again, speak clearly', 'var(--gold)');
+      showResultError('Nothing was heard. Tap the mic and speak the word clearly into your mic.');
     }
   };
 
-  rec.onend = () => { resetMicUI(); };
+  try{ rec.start(); }
+  catch(e){
+    resetMicUI();
+    setStatus('❌ Could not start mic: ' + e.message, 'var(--rose)');
+  }
+}
 
-  try{ rec.start(); } catch(e){ resetMicUI(); }
+function setStatus(msg, color){
+  const el = document.getElementById('speakStatus');
+  if(el){ el.textContent = msg; el.style.color = color || 'var(--muted)'; }
+}
+
+function showResultError(msg){
+  const rb = document.getElementById('resultBlock');
+  if(!rb) return;
+  rb.className = 'result-block retry show';
+  rb.querySelector('.result-label').textContent = '⚠️ Could not score';
+  rb.querySelector('.result-score').textContent = '';
+  rb.querySelector('.result-score').style.color = 'var(--rose)';
+  rb.querySelector('.score-bar-fill').style.width = '0%';
+  rb.querySelector('.result-heard').innerHTML = msg;
 }
 
 function stopRecording(){
