@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word & Spirit — Bible Language Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Cinzel:wght@500;700&family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1923;
+  --card: #16232f;
+  --card2: #1c2d3e;
+  --border: #2a4258;
+  --gold: #f5c842;
+  --gold2: #ffe98a;
+  --teal: #38c9b0;
+  --rose: #f07070;
+  --violet: #a87de8;
+  --sky: #5ab4f0;
+  --green: #5ecb8a;
+  --text: #e8f0f8;
+  --muted: #7a9bb5;
+  --tag-noun: #5ab4f0;
+  --tag-verb: #f07070;
+  --tag-adj: #5ecb8a;
+  --tag-prep: #a87de8;
+  --tag-name: #f5c842;
+  --tag-conj: #f0a050;
+  --tag-pron: #38c9b0;
+  --tag-particle: #e87dbd;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Nunito',sans-serif; min-height:100vh; }
+
+/* ── LAYOUT ── */
+.app { max-width:860px; margin:0 auto; padding:1.5rem 1rem 4rem; }
+
+/* ── HEADER ── */
+.header { text-align:center; padding:2rem 0 1.5rem; }
+.header-sub { font-family:'Cinzel',serif; font-size:.7rem; letter-spacing:.35em; color:var(--teal); opacity:.8; margin-bottom:.5rem; }
+.header h1 { font-family:'Cinzel',serif; font-size:clamp(1.6rem,5vw,2.6rem); font-weight:700; color:var(--gold); text-shadow:0 0 30px rgba(245,200,66,.25); }
+.header p { color:var(--muted); font-size:.9rem; margin-top:.4rem; }
+
+/* XP bar */
+.xp-bar-wrap { background:rgba(255,255,255,.06); border-radius:20px; height:10px; margin:.8rem auto; max-width:360px; overflow:hidden; }
+.xp-bar-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); border-radius:20px; transition:width .6s ease; }
+.xp-label { text-align:center; font-size:.72rem; color:var(--muted); letter-spacing:.1em; margin-bottom:1rem; }
+
+/* ── CONTROLS BAR ── */
+.controls-row { display:flex; gap:.6rem; flex-wrap:wrap; justify-content:center; margin-bottom:1.2rem; }
+.pill { padding:.45rem 1.1rem; border-radius:20px; border:1.5px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; font-family:'Nunito',sans-serif; font-size:.8rem; font-weight:700; transition:all .25s; letter-spacing:.04em; }
+.pill:hover { border-color:var(--teal); color:var(--teal); }
+.pill.active { background:rgba(56,201,176,.15); border-color:var(--teal); color:var(--teal); }
+.pill.lang-active { background:rgba(245,200,66,.15); border-color:var(--gold); color:var(--gold); }
+
+/* ── VERSE HEADER CARD ── */
+.verse-header { background:var(--card); border:1.5px solid var(--border); border-radius:14px; padding:1.4rem 1.6rem 1.2rem; margin-bottom:1rem; position:relative; overflow:hidden; }
+.verse-header::before { content:''; position:absolute; top:0;left:0;right:0;height:3px; background:linear-gradient(90deg,var(--teal),var(--gold),var(--violet)); }
+.verse-ref-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem; margin-bottom:.8rem; }
+.verse-ref { font-family:'Cinzel',serif; font-size:.9rem; color:var(--gold); letter-spacing:.12em; }
+.cat-badge { font-size:.65rem; font-weight:800; letter-spacing:.15em; padding:.25rem .7rem; border-radius:10px; background:rgba(56,201,176,.15); color:var(--teal); border:1px solid rgba(56,201,176,.3); }
+.verse-english { font-size:1.1rem; line-height:1.75; color:var(--text); font-style:italic; }
+
+/* speak btn */
+.speak-btn { display:inline-flex; align-items:center; gap:.35rem; background:rgba(90,180,240,.12); border:1.5px solid rgba(90,180,240,.3); color:var(--sky); border-radius:20px; padding:.3rem .75rem; cursor:pointer; font-size:.75rem; font-weight:700; transition:all .25s; }
+.speak-btn:hover { background:rgba(90,180,240,.25); }
+.speak-btn svg { width:14px; height:14px; fill:currentColor; }
+.speak-btn.speaking { background:rgba(90,180,240,.3); animation:pulse .6s ease infinite alternate; }
+@keyframes pulse { from{opacity:.7} to{opacity:1} }
+
+/* ── TABS ── */
+.tabs { display:flex; gap:.5rem; margin-bottom:1rem; border-bottom:1.5px solid var(--border); padding-bottom:.6rem; overflow-x:auto; }
+.tab { padding:.45rem 1rem; border-radius:8px 8px 0 0; background:transparent; border:none; color:var(--muted); cursor:pointer; font-family:'Nunito',sans-serif; font-size:.85rem; font-weight:700; transition:all .2s; white-space:nowrap; }
+.tab:hover { color:var(--text); }
+.tab.active { background:var(--card2); color:var(--gold); border:1.5px solid var(--border); border-bottom:none; }
+
+/* ── SECTION CARD ── */
+.section-card { background:var(--card); border:1.5px solid var(--border); border-radius:12px; padding:1.4rem; margin-bottom:1rem; }
+.section-title { font-family:'Cinzel',serif; font-size:.72rem; letter-spacing:.2em; color:var(--gold); opacity:.8; margin-bottom:1rem; display:flex; align-items:center; gap:.5rem; }
+
+/* ── WORD BREAKDOWN ── */
+.word-grid { display:flex; flex-wrap:wrap; gap:.6rem; }
+.word-chip { background:var(--card2); border:1.5px solid var(--border); border-radius:10px; padding:.6rem .8rem .5rem; cursor:pointer; transition:all .25s; position:relative; min-width:80px; }
+.word-chip:hover, .word-chip.flipped { border-color:var(--gold); background:rgba(245,200,66,.08); }
+.word-chip-top { display:flex; align-items:flex-start; justify-content:space-between; gap:.3rem; }
+.word-chip .foreign { font-size:1.25rem; display:block; line-height:1.2; }
+.word-chip .foreign.zh { font-family:'Noto Sans SC',sans-serif; }
+.word-chip .foreign.ko { font-family:'Noto Sans KR',sans-serif; }
+.word-chip .foreign.ja { font-family:'Noto Sans JP',sans-serif; }
+.word-chip .roman { font-size:.68rem; color:var(--sky); font-style:italic; display:block; margin-top:.18rem; margin-bottom:.25rem; line-height:1.3; }
+.word-chip .meaning { font-size:.72rem; color:var(--gold2); font-weight:700; display:block; margin-bottom:.25rem; line-height:1.3; }
+.word-chip .pos-tag { font-size:.58rem; font-weight:800; letter-spacing:.1em; padding:.1rem .4rem; border-radius:6px; display:inline-block; }
+.word-chip .chip-speak { background:rgba(90,180,240,.15); border:1px solid rgba(90,180,240,.3); border-radius:6px; cursor:pointer; color:var(--sky); padding:.2rem .3rem; line-height:1; display:flex; align-items:center; flex-shrink:0; transition:all .2s; }
+.word-chip .chip-speak:hover { background:rgba(90,180,240,.3); }
+.word-chip .chip-speak svg { width:13px; height:13px; fill:currentColor; }
+
+/* POS colors */
+.pos-noun { background:rgba(90,180,240,.15); color:var(--tag-noun); }
+.pos-verb { background:rgba(240,112,112,.15); color:var(--tag-verb); }
+.pos-adj  { background:rgba(94,203,138,.15); color:var(--tag-adj); }
+.pos-prep { background:rgba(168,125,232,.15); color:var(--tag-prep); }
+.pos-name { background:rgba(245,200,66,.15); color:var(--tag-name); }
+.pos-conj { background:rgba(240,160,80,.15); color:var(--tag-conj); }
+.pos-pron { background:rgba(56,201,176,.15); color:var(--tag-pron); }
+.pos-particle { background:rgba(232,125,189,.15); color:var(--tag-particle); }
+.pos-other { background:rgba(255,255,255,.08); color:var(--muted); }
+
+/* legend */
+.pos-legend { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem; }
+.legend-chip { font-size:.6rem; font-weight:800; letter-spacing:.08em; padding:.18rem .5rem; border-radius:6px; }
+
+/* ── GRAMMAR NOTES ── */
+.grammar-block { margin-bottom:1rem; padding:.9rem 1rem; background:var(--card2); border-left:3px solid var(--violet); border-radius:0 8px 8px 0; }
+.grammar-block h4 { font-size:.78rem; color:var(--violet); font-weight:800; letter-spacing:.08em; margin-bottom:.35rem; }
+.grammar-block p { font-size:.85rem; color:var(--muted); line-height:1.65; }
+.grammar-block .example { margin-top:.4rem; font-style:italic; color:var(--text); font-size:.82rem; }
+
+/* ── SENTENCE STRUCTURE ── */
+.struct-row { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-bottom:.5rem; }
+.struct-box { padding:.4rem .8rem; border-radius:8px; font-size:.8rem; font-weight:700; text-align:center; min-width:60px; }
+.struct-arrow { color:var(--muted); font-size:1.1rem; }
+.struct-label { font-size:.65rem; color:var(--muted); text-align:center; margin-top:.15rem; }
+.struct-wrap { background:var(--card2); border-radius:8px; padding:.5rem .7rem; }
+
+/* ── FULL TRANSLATION BLOCK ── */
+.trans-block { margin-bottom:1rem; padding:1rem; background:var(--card2); border-radius:10px; border:1px solid var(--border); }
+.trans-lang-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:.6rem; }
+.trans-lang { font-size:.68rem; font-weight:800; letter-spacing:.18em; color:var(--gold); display:flex; align-items:center; gap:.4rem; }
+.trans-text { line-height:1.9; font-size:1.1rem; }
+.trans-text.zh { font-family:'Noto Sans SC',sans-serif; }
+.trans-text.ko { font-family:'Noto Sans KR',sans-serif; }
+.trans-text.ja { font-family:'Noto Sans JP',sans-serif; }
+.trans-roman { font-size:.78rem; color:var(--muted); font-style:italic; margin-top:.3rem; line-height:1.6; }
+
+/* ── QUIZ ── */
+.quiz-wrap { }
+.quiz-score-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+.score-badge { font-size:.8rem; font-weight:800; color:var(--green); }
+.streak-badge { font-size:.8rem; font-weight:800; color:var(--gold); }
+.quiz-q { background:var(--card2); border-radius:12px; padding:1.2rem; margin-bottom:1rem; border:1.5px solid var(--border); }
+.quiz-q .q-text { font-size:1rem; font-weight:700; margin-bottom:.3rem; }
+.quiz-q .q-foreign { font-size:1.4rem; font-weight:700; margin-bottom:.8rem; color:var(--gold2); }
+.quiz-q .q-foreign.zh { font-family:'Noto Sans SC',sans-serif; }
+.quiz-q .q-foreign.ko { font-family:'Noto Sans KR',sans-serif; }
+.quiz-q .q-foreign.ja { font-family:'Noto Sans JP',sans-serif; }
+.quiz-options { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+.quiz-opt { padding:.65rem 1rem; background:rgba(255,255,255,.04); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; font-size:.88rem; font-weight:700; transition:all .2s; text-align:left; color:var(--text); }
+.quiz-opt:hover:not(:disabled) { border-color:var(--sky); background:rgba(90,180,240,.08); }
+.quiz-opt.correct { border-color:var(--green)!important; background:rgba(94,203,138,.15)!important; color:var(--green)!important; }
+.quiz-opt.wrong { border-color:var(--rose)!important; background:rgba(240,112,112,.1)!important; color:var(--rose)!important; }
+.quiz-opt:disabled { cursor:default; }
+.quiz-feedback { padding:.7rem 1rem; border-radius:8px; font-size:.88rem; font-weight:700; margin-top:.5rem; display:none; }
+.quiz-feedback.show { display:block; }
+.quiz-feedback.ok { background:rgba(94,203,138,.12); color:var(--green); }
+.quiz-feedback.bad { background:rgba(240,112,112,.1); color:var(--rose); }
+.quiz-next-btn { margin-top:.8rem; padding:.6rem 1.4rem; background:linear-gradient(135deg,rgba(56,201,176,.2),rgba(56,201,176,.1)); border:1.5px solid var(--teal); color:var(--teal); border-radius:20px; cursor:pointer; font-family:'Nunito',sans-serif; font-size:.85rem; font-weight:800; display:none; }
+.quiz-next-btn.show { display:inline-block; }
+
+/* match game */
+.match-grid { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+.match-card { padding:.7rem .8rem; background:var(--card2); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; font-size:.85rem; font-weight:700; transition:all .2s; min-height:54px; display:flex; align-items:center; justify-content:center; text-align:center; }
+.match-card.zh,.match-card.ko,.match-card.ja { font-size:1rem; }
+.match-card.zh .inner { font-family:'Noto Sans SC',sans-serif; }
+.match-card.ko .inner { font-family:'Noto Sans KR',sans-serif; }
+.match-card.ja .inner { font-family:'Noto Sans JP',sans-serif; }
+.match-card.selected { border-color:var(--gold); background:rgba(245,200,66,.1); }
+.match-card.matched { border-color:var(--green)!important; background:rgba(94,203,138,.12)!important; color:var(--green)!important; opacity:.7; cursor:default; }
+.match-card.wrong-flash { border-color:var(--rose)!important; background:rgba(240,112,112,.1)!important; animation:shake .3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
+/* fill blank */
+.fill-sentence { font-size:1.05rem; line-height:2; margin-bottom:.8rem; }
+.blank-input { background:transparent; border:none; border-bottom:2px solid var(--gold); color:var(--gold); font-family:'Nunito',sans-serif; font-size:1rem; font-weight:700; width:110px; text-align:center; outline:none; padding:0 .2rem; }
+.blank-input.correct-input { border-color:var(--green); color:var(--green); }
+.blank-input.wrong-input { border-color:var(--rose); color:var(--rose); }
+
+/* ── NAV FOOTER ── */
+.nav-footer { display:flex; gap:.8rem; justify-content:center; margin-top:1.5rem; flex-wrap:wrap; }
+.nav-btn { padding:.6rem 1.6rem; background:transparent; border:1.5px solid var(--border); color:var(--muted); border-radius:20px; cursor:pointer; font-family:'Nunito',sans-serif; font-size:.85rem; font-weight:800; transition:all .25s; }
+.nav-btn:hover { border-color:var(--teal); color:var(--teal); }
+.nav-btn.primary { background:linear-gradient(135deg,rgba(245,200,66,.18),rgba(245,200,66,.08)); border-color:var(--gold); color:var(--gold); }
+
+/* empty state */
+.empty { text-align:center; color:var(--muted); padding:2rem; font-style:italic; }
+.trophy { font-size:2.5rem; display:block; margin-bottom:.5rem; }
+
+/* ── SPEAK IT TAB ── */
+.speak-mode-wrap { }
+.speak-word-card {
+  background:var(--card2); border:2px solid var(--border); border-radius:14px;
+  padding:1.6rem 1.4rem; text-align:center; margin-bottom:1rem;
+  transition:border-color .3s;
+}
+.speak-word-card.listening { border-color:var(--rose); box-shadow:0 0 24px rgba(240,112,112,.2); }
+.speak-word-card.success  { border-color:var(--green); box-shadow:0 0 24px rgba(94,203,138,.2); }
+.speak-target { font-size:2.2rem; font-weight:700; margin-bottom:.3rem; }
+.speak-target.zh { font-family:'Noto Sans SC',sans-serif; }
+.speak-target.ko { font-family:'Noto Sans KR',sans-serif; }
+.speak-target.ja { font-family:'Noto Sans JP',sans-serif; }
+.speak-roman-hint { font-size:.9rem; color:var(--muted); font-style:italic; margin-bottom:.4rem; }
+.speak-meaning { font-size:.82rem; color:var(--gold); font-weight:700; margin-bottom:1rem; }
+
+/* mic button */
+.mic-btn {
+  width:70px; height:70px; border-radius:50%; border:none; cursor:pointer;
+  background:linear-gradient(135deg,#c0392b,#e74c3c); color:#fff;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:1.6rem; transition:all .2s; box-shadow:0 4px 20px rgba(231,76,60,.35);
+  margin:0 auto;
+}
+.mic-btn:hover { transform:scale(1.07); box-shadow:0 6px 28px rgba(231,76,60,.5); }
+.mic-btn.recording {
+  background:linear-gradient(135deg,#e74c3c,#c0392b);
+  animation:micPulse .7s ease infinite alternate;
+  box-shadow:0 0 0 0 rgba(231,76,60,.5);
+}
+@keyframes micPulse {
+  from { box-shadow:0 0 0 4px rgba(231,76,60,.3),0 0 0 8px rgba(231,76,60,.1); transform:scale(1.02); }
+  to   { box-shadow:0 0 0 10px rgba(231,76,60,.15),0 0 0 20px rgba(231,76,60,.04); transform:scale(1.06); }
+}
+.mic-label { font-size:.72rem; color:var(--muted); margin-top:.5rem; letter-spacing:.08em; font-weight:700; }
+
+/* waveform */
+.waveform { display:flex; align-items:center; justify-content:center; gap:3px; height:30px; margin:.6rem 0; }
+.wave-bar { width:4px; border-radius:3px; background:var(--rose); transition:height .1s; }
+.waveform.idle .wave-bar { height:4px; background:var(--border); }
+.waveform.active .wave-bar { animation:waveAnim .5s ease infinite; }
+.wave-bar:nth-child(1){animation-delay:0s}
+.wave-bar:nth-child(2){animation-delay:.08s}
+.wave-bar:nth-child(3){animation-delay:.16s}
+.wave-bar:nth-child(4){animation-delay:.24s}
+.wave-bar:nth-child(5){animation-delay:.32s}
+.wave-bar:nth-child(6){animation-delay:.4s}
+.wave-bar:nth-child(7){animation-delay:.32s}
+.wave-bar:nth-child(8){animation-delay:.24s}
+.wave-bar:nth-child(9){animation-delay:.16s}
+@keyframes waveAnim {
+  0%,100%{height:4px} 50%{height:22px}
+}
+
+/* result bar */
+.result-block { margin-top:1rem; border-radius:10px; padding:1rem 1.2rem; display:none; }
+.result-block.show { display:block; }
+.result-block.great { background:rgba(94,203,138,.12); border:1.5px solid rgba(94,203,138,.3); }
+.result-block.good  { background:rgba(245,200,66,.1);  border:1.5px solid rgba(245,200,66,.3); }
+.result-block.retry { background:rgba(240,112,112,.1); border:1.5px solid rgba(240,112,112,.3); }
+.result-score { font-size:2rem; font-weight:900; }
+.result-label { font-size:.8rem; font-weight:800; letter-spacing:.1em; margin-bottom:.4rem; }
+.result-heard { font-size:.82rem; color:var(--muted); margin-top:.3rem; }
+.result-heard strong { color:var(--text); }
+.score-bar-wrap { background:rgba(255,255,255,.07); border-radius:10px; height:8px; margin:.6rem 0; overflow:hidden; }
+.score-bar-fill { height:100%; border-radius:10px; transition:width .8s cubic-bezier(.34,1.56,.64,1); }
+
+/* word nav */
+.word-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:.8rem; flex-wrap:wrap; gap:.5rem; }
+.word-counter { font-size:.75rem; color:var(--muted); font-weight:700; }
+.word-dots { display:flex; gap:.35rem; }
+.word-dot { width:8px; height:8px; border-radius:50%; background:var(--border); transition:all .2s; }
+.word-dot.done  { background:var(--green); }
+.word-dot.current { background:var(--gold); transform:scale(1.3); }
+
+/* mode toggle */
+.mode-toggle { display:flex; gap:.5rem; justify-content:center; margin-bottom:1rem; }
+.mode-pill { padding:.38rem .9rem; border-radius:16px; border:1.5px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; font-family:'Nunito',sans-serif; font-size:.75rem; font-weight:800; transition:all .2s; }
+.mode-pill.active { background:rgba(240,112,112,.15); border-color:var(--rose); color:var(--rose); }
+
+/* phrase display */
+.phrase-display { font-size:1.1rem; line-height:2; margin-bottom:.8rem; }
+.phrase-display.zh { font-family:'Noto Sans SC',sans-serif; font-size:1.2rem; }
+.phrase-display.ko { font-family:'Noto Sans KR',sans-serif; }
+.phrase-display.ja { font-family:'Noto Sans JP',sans-serif; }
+
+  .quiz-options{grid-template-columns:1fr}
+  .match-grid{grid-template-columns:1fr 1fr}
+  .word-chip .foreign{font-size:1rem}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-sub">✦ LANGUAGE + SCRIPTURE ✦</div>
+  <h1>Word &amp; Spirit</h1>
+  <p>Learn Chinese · Korean · Japanese through God's Word</p>
+  <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xpFill" style="width:0%"></div></div>
+  <div class="xp-label" id="xpLabel">⭐ 0 XP — Keep going!</div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls-row" id="langRow">
+  <button class="pill lang-active" onclick="setLang('zh',this)">🇨🇳 Chinese</button>
+  <button class="pill" onclick="setLang('ko',this)">🇰🇷 Korean</button>
+  <button class="pill" onclick="setLang('ja',this)">🇯🇵 Japanese</button>
+</div>
+
+<!-- VERSE SELECTOR -->
+<div class="controls-row" id="verseRow"></div>
+
+<!-- VERSE HEADER -->
+<div class="verse-header" id="verseHeader"></div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('explore',this)">🔍 Explore</button>
+  <button class="tab" onclick="showTab('grammar',this)">📖 Grammar</button>
+  <button class="tab" onclick="showTab('quiz',this)">🎯 Word Quiz</button>
+  <button class="tab" onclick="showTab('match',this)">🔗 Match Game</button>
+  <button class="tab" onclick="showTab('fill',this)">✏️ Fill Blank</button>
+  <button class="tab" onclick="showTab('speak',this)">🎤 Speak It</button>
+</div>
+
+<div id="tabContent"></div>
+
+<div class="nav-footer">
+  <button class="nav-btn" onclick="changeVerse(-1)">← Prev Verse</button>
+  <button class="nav-btn primary" onclick="changeVerse(1)">Next Verse →</button>
+</div>
+
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const VERSES = [
+{
+  ref:'John 3:16', cat:'GOSPEL',
+  en:'For God so loved the world, that he gave his only Son, that whoever believes in him should not perish but have eternal life.',
+  langs:{
+    zh:{
+      full:'神爱世人，甚至将他的独生子赐给他们，叫一切信他的，不至灭亡，反得永生。',
+      roman:'Shén ài shìrén, shènzhì jiāng tā de dúshēngzǐ cìgěi tāmen, jiào yīqiè xìn tā de, bù zhì mièwáng, fǎn dé yǒngshēng.',
+      words:[
+        {w:'神',r:'Shén',m:'God',pos:'name'},
+        {w:'爱',r:'ài',m:'loves / love',pos:'verb'},
+        {w:'世人',r:'shìrén',m:'the world / people of the world',pos:'noun'},
+        {w:'甚至',r:'shènzhì',m:'so much that / even',pos:'conj'},
+        {w:'将',r:'jiāng',m:'(gives/takes action marker)',pos:'particle'},
+        {w:'他的',r:'tā de',m:'his',pos:'pron'},
+        {w:'独生子',r:'dúshēngzǐ',m:'only Son',pos:'noun'},
+        {w:'赐给',r:'cìgěi',m:'gave / bestowed upon',pos:'verb'},
+        {w:'他们',r:'tāmen',m:'them',pos:'pron'},
+        {w:'叫',r:'jiào',m:'so that',pos:'conj'},
+        {w:'一切',r:'yīqiè',m:'whoever / all',pos:'adj'},
+        {w:'信',r:'xìn',m:'believes / trusts',pos:'verb'},
+        {w:'不至',r:'bù zhì',m:'shall not',pos:'other'},
+        {w:'灭亡',r:'mièwáng',m:'perish / be destroyed',pos:'verb'},
+        {w:'反',r:'fǎn',m:'but instead / rather',pos:'conj'},
+        {w:'得',r:'dé',m:'obtain / have',pos:'verb'},
+        {w:'永生',r:'yǒngshēng',m:'eternal life',pos:'noun'},
+      ],
+      grammar:[
+        {t:'Subject-Verb-Object (SVO)',b:'Chinese follows SVO order, just like English. 神(God) + 爱(loves) + 世人(the world). Simple and direct!'},
+        {t:'的 (de) — Possessive Particle',b:'他的 means "his." 的 attaches to a pronoun or noun to show possession. Like an apostrophe-s in English: 他(he) + 的 = "his."'},
+        {t:'叫 — Purpose Connector',b:'叫 here means "so that / in order that." It introduces the purpose: God gave His Son SO THAT people would believe.'},
+        {t:'不至 + Verb = "shall not"',b:'不 means "not," 至 means "to reach/arrive at." Together 不至 + 灭亡 = "shall not reach perishing." A negative construction.'},
+        {t:'反 — Contrast Word',b:'反 introduces contrast: "but instead." God gave His Son so people would NOT perish, but INSTEAD have eternal life.'},
+      ],
+      structure:[
+        {label:'Subject',text:'神',color:'#5ab4f0'},
+        {label:'Verb',text:'爱',color:'#f07070'},
+        {label:'Object',text:'世人',color:'#5ecb8a'},
+        {label:'Purpose clause',text:'叫…得永生',color:'#a87de8'},
+      ],
+      fill:{sentence:'神爱___，甚至将他的独生子赐给他们，叫一切信他的，不至灭亡，反得___。',blanks:['世人','永生'],hints:['the world / people','eternal life']}
+    },
+    ko:{
+      full:'하나님이 세상을 이처럼 사랑하사 독생자를 주셨으니 이는 그를 믿는 자마다 멸망하지 않고 영생을 얻게 하려 하심이라.',
+      roman:'Hananim-i sesang-eul icheoreom saranghasa doksaengja-reul jusyeosseuni ineun geu-reul midneun jamada myeolmang-haji anko yeongsaeng-eul eotge haryeo hasimira.',
+      words:[
+        {w:'하나님',r:'Hananim',m:'God',pos:'name'},
+        {w:'이',r:'i',m:'(subject particle)',pos:'particle'},
+        {w:'세상',r:'sesang',m:'the world',pos:'noun'},
+        {w:'을',r:'eul',m:'(object particle)',pos:'particle'},
+        {w:'이처럼',r:'icheoreom',m:'so / like this / in this way',pos:'adj'},
+        {w:'사랑하사',r:'saranghasa',m:'loved (formal/archaic)',pos:'verb'},
+        {w:'독생자',r:'doksaengja',m:'only Son',pos:'noun'},
+        {w:'를',r:'reul',m:'(object particle)',pos:'particle'},
+        {w:'주셨으니',r:'jusyeosseuni',m:'gave (because / so)',pos:'verb'},
+        {w:'믿는',r:'midneun',m:'believes / who believes',pos:'verb'},
+        {w:'자마다',r:'jamada',m:'whoever / every person who',pos:'pron'},
+        {w:'멸망하지 않고',r:'myeolmang-haji anko',m:'not perish / without perishing',pos:'verb'},
+        {w:'영생',r:'yeongsaeng',m:'eternal life',pos:'noun'},
+        {w:'을',r:'eul',m:'(object particle)',pos:'particle'},
+        {w:'얻게',r:'eotge',m:'to obtain / to receive',pos:'verb'},
+      ],
+      grammar:[
+        {t:'SOV Word Order',b:'Korean is SOV (Subject-Object-Verb). Unlike English, the verb comes LAST. 하나님이(God) + 세상을(world) + 사랑하사(loved). The verb at the end is the key!'},
+        {t:'Particles: 이/가 and 을/를',b:'Korean uses particles to show grammatical roles. 이 marks the subject (하나님이 = "God [is the subject]"). 을/를 marks the object (세상을 = "world [is acted upon]").'},
+        {t:'Verb Endings Show Tense & Formality',b:'주셨으니 = gave (formal, past, "because/so"). Korean verb endings carry tense, formality level, and connective meaning all at once.'},
+        {t:'자마다 — Universal Pronoun',b:'자마다 means "every person who" or "whoever." 자 = person, 마다 = every. So 믿는 자마다 = "every person who believes."'},
+      ],
+      structure:[
+        {label:'Subject+particle',text:'하나님이',color:'#5ab4f0'},
+        {label:'Object+particle',text:'세상을',color:'#5ecb8a'},
+        {label:'Verb (loved)',text:'사랑하사',color:'#f07070'},
+        {label:'Result clause',text:'영생을 얻게',color:'#a87de8'},
+      ],
+      fill:{sentence:'하나님이 세상을 이처럼 ___하사 독생자를 주셨으니 이는 그를 믿는 자마다 ___ 않고 영생을 얻게 하려 하심이라.',blanks:['사랑','멸망하지'],hints:['loved','not perish']}
+    },
+    ja:{
+      full:'神は、実に、そのひとり子をお与えになったほどに、世を愛してくださいました。それは御子を信じる者が、ひとりとして滅びることなく、永遠のいのちを持つためです。',
+      roman:'Kami wa, jitsu ni, sono hitoriko wo o-atae ni natta hodo ni, yo wo aishite kudasaimashita. Sore wa Miko wo shinjiru mono ga, hitori to shite horobiru koto naku, eien no inochi wo motsu tame desu.',
+      words:[
+        {w:'神',r:'Kami',m:'God',pos:'name'},
+        {w:'は',r:'wa',m:'(topic marker particle)',pos:'particle'},
+        {w:'実に',r:'jitsu ni',m:'truly / indeed',pos:'adj'},
+        {w:'その',r:'sono',m:'that / his',pos:'pron'},
+        {w:'ひとり子',r:'hitoriko',m:'only Son',pos:'noun'},
+        {w:'を',r:'wo',m:'(object particle)',pos:'particle'},
+        {w:'お与えになった',r:'o-atae ni natta',m:'gave (honorific)',pos:'verb'},
+        {w:'世',r:'yo',m:'the world',pos:'noun'},
+        {w:'愛して',r:'aishite',m:'loved / loving',pos:'verb'},
+        {w:'くださいました',r:'kudasaimashita',m:'(honorific: graciously did)',pos:'verb'},
+        {w:'信じる',r:'shinjiru',m:'believes / to believe',pos:'verb'},
+        {w:'者',r:'mono',m:'person / one who',pos:'noun'},
+        {w:'滅びる',r:'horobiru',m:'perish / be destroyed',pos:'verb'},
+        {w:'永遠',r:'eien',m:'eternal / forever',pos:'adj'},
+        {w:'いのち',r:'inochi',m:'life',pos:'noun'},
+        {w:'持つ',r:'motsu',m:'to have / to possess',pos:'verb'},
+      ],
+      grammar:[
+        {t:'は (wa) — Topic Marker',b:'は marks the topic of the sentence — what we\'re talking about. 神は means "As for God..." It\'s not just the subject; it sets the topic for everything that follows.'},
+        {t:'Honorific Language (Keigo)',b:'お与えになった and くださいました are honorific forms. Japanese uses special verb forms when speaking of God or superiors. This shows reverence — the translator chose these to honor God.'},
+        {t:'Verb at the End (SOV)',b:'Like Korean, Japanese is SOV. The main verb comes last: 持つためです = "in order to have." Every sentence builds toward its verb at the end.'},
+        {t:'Particles: を marks the object',b:'ひとり子を — the を particle marks what receives the action. God gave (action) → His Son (object marked by を). Particles are like invisible labels on every noun.'},
+        {t:'なく — Negative Connector',b:'滅びることなく = "without perishing." なく attached to a verb phrase means "without doing X." It connects two ideas: no perishing + instead having life.'},
+      ],
+      structure:[
+        {label:'Topic+は',text:'神は',color:'#5ab4f0'},
+        {label:'Object',text:'世を',color:'#5ecb8a'},
+        {label:'Verb (loved)',text:'愛してくださいました',color:'#f07070'},
+        {label:'Purpose',text:'いのちを持つため',color:'#a87de8'},
+      ],
+      fill:{sentence:'神は、実に、そのひとり子をお与えになったほどに、世を___してくださいました。それは御子を___る者が、永遠のいのちを持つためです。',blanks:['愛','信じ'],hints:['loved','believ-']}
+    }
+  }
+},
+{
+  ref:'Philippians 4:13', cat:'STRENGTH',
+  en:'I can do all things through him who strengthens me.',
+  langs:{
+    zh:{
+      full:'我靠着那加给我力量的，凡事都能做。',
+      roman:'Wǒ kào zhe nà jiā gěi wǒ lìliàng de, fán shì dōu néng zuò.',
+      words:[
+        {w:'我',r:'wǒ',m:'I / me',pos:'pron'},
+        {w:'靠着',r:'kào zhe',m:'leaning on / through / relying on',pos:'verb'},
+        {w:'那',r:'nà',m:'that (one)',pos:'pron'},
+        {w:'加给',r:'jiā gěi',m:'gives / adds to',pos:'verb'},
+        {w:'我',r:'wǒ',m:'me',pos:'pron'},
+        {w:'力量',r:'lìliàng',m:'strength / power',pos:'noun'},
+        {w:'的',r:'de',m:'(relative clause marker)',pos:'particle'},
+        {w:'凡事',r:'fán shì',m:'all things / every matter',pos:'noun'},
+        {w:'都',r:'dōu',m:'all / everything',pos:'adj'},
+        {w:'能',r:'néng',m:'can / able to',pos:'verb'},
+        {w:'做',r:'zuò',m:'do / accomplish',pos:'verb'},
+      ],
+      grammar:[
+        {t:'靠着 — "Through / By relying on"',b:'靠 = to lean against/rely on. 着 is an aspect particle showing ongoing state. Together: "leaning upon" or "through." The idea is continuous dependence on God.'},
+        {t:'那…的 — Relative Clause',b:'那加给我力量的 = "the one who gives me strength." 那 = that. 的 ends the relative clause. The structure: 那 + [description] + 的 = "the one who [does something]."'},
+        {t:'都 — Universal Quantifier',b:'都 means "all, both, every." 凡事都能做 = "every single thing can be done." 都 amplifies completeness.'},
+        {t:'能 — Ability Modal',b:'能 is a modal verb meaning "can / is able to." 都能做 = "all (都) can (能) do (做)." Modals come before the main verb in Chinese.'},
+      ],
+      structure:[
+        {label:'Subject',text:'我',color:'#5ab4f0'},
+        {label:'"Through"',text:'靠着那…的',color:'#a87de8'},
+        {label:'Object',text:'凡事',color:'#5ecb8a'},
+        {label:'Can do',text:'都能做',color:'#f07070'},
+      ],
+      fill:{sentence:'我___着那加给我___的，凡事都能做。',blanks:['靠','力量'],hints:['relying on/through','strength']}
+    },
+    ko:{
+      full:'내게 능력 주시는 자 안에서 내가 모든 것을 할 수 있느니라.',
+      roman:'Naege neungnyeok jushineun ja an-eseo naega modeun geoseul hal su itneunira.',
+      words:[
+        {w:'내게',r:'naege',m:'to me / for me',pos:'pron'},
+        {w:'능력',r:'neungnyeok',m:'strength / power / ability',pos:'noun'},
+        {w:'주시는',r:'jushineun',m:'who gives (honorific)',pos:'verb'},
+        {w:'자',r:'ja',m:'person / one',pos:'noun'},
+        {w:'안에서',r:'an-eseo',m:'within / through / inside of',pos:'prep'},
+        {w:'내가',r:'naega',m:'I (subject)',pos:'pron'},
+        {w:'모든',r:'modeun',m:'all / every',pos:'adj'},
+        {w:'것을',r:'geoseul',m:'things (object)',pos:'noun'},
+        {w:'할 수 있느니라',r:'hal su itneunira',m:'am able to do (formal declaration)',pos:'verb'},
+      ],
+      grammar:[
+        {t:'안에서 — "Within / Through"',b:'안 = inside. 에서 = location/means particle. 자 안에서 = "within/through the one who..." It\'s spatial language used spiritually: our capacity lives INSIDE Christ.'},
+        {t:'주시는 — Honorific Present Participle',b:'주다 = to give. 시 = honorific suffix (for God/superiors). 는 = present tense modifier. Together: "who graciously gives." Three layers in one word!'},
+        {t:'할 수 있다 — Ability Construction',b:'"할 수 있다" is the standard ability form: verb stem + 수 있다 = "can do." 할 = to do, 수 = ability/way, 있다 = to exist/have. Literally "the way to do exists."'},
+        {t:'Formal Ending -느니라',b:'-느니라 is a formal declarative ending used in scripture. It sounds like proclamation — "It IS so!" Modern speech would say 있다, but 있느니라 carries biblical weight.'},
+      ],
+      structure:[
+        {label:'"Through Him"',text:'자 안에서',color:'#a87de8'},
+        {label:'Subject',text:'내가',color:'#5ab4f0'},
+        {label:'Object',text:'모든 것을',color:'#5ecb8a'},
+        {label:'Can do',text:'할 수 있느니라',color:'#f07070'},
+      ],
+      fill:{sentence:'내게 ___ 주시는 자 안에서 내가 모든 것을 할 수 ___느니라.',blanks:['능력','있'],hints:['strength/power','can/able']}
+    },
+    ja:{
+      full:'私を強くしてくださる方によって、私はどんなことでもできます。',
+      roman:'Watashi wo tsuyoku shite kudasaru kata ni yotte, watashi wa donna koto demo dekimasu.',
+      words:[
+        {w:'私',r:'watashi',m:'I / me',pos:'pron'},
+        {w:'を',r:'wo',m:'(object particle)',pos:'particle'},
+        {w:'強く',r:'tsuyoku',m:'strong / powerfully',pos:'adj'},
+        {w:'して',r:'shite',m:'making / doing (て-form)',pos:'verb'},
+        {w:'くださる',r:'kudasaru',m:'graciously gives (honorific)',pos:'verb'},
+        {w:'方',r:'kata',m:'person / one (respectful)',pos:'noun'},
+        {w:'によって',r:'ni yotte',m:'through / by means of',pos:'prep'},
+        {w:'どんなことでも',r:'donna koto demo',m:'anything and everything',pos:'pron'},
+        {w:'できます',r:'dekimasu',m:'can do / am able',pos:'verb'},
+      ],
+      grammar:[
+        {t:'によって — "Through / By Means Of"',b:'によって is the key preposition here: "through" or "by means of." 方によって = "through [this] person." It shows the SOURCE of Paul\'s ability is Christ.'},
+        {t:'くださる — Honorific "Give"',b:'くれる = to give (plain). くださる = honorific form used when someone of higher status gives to you. Here it\'s used of God/Christ — reverential grammar.'},
+        {t:'強くして — Causative Construction',b:'強い(strong) → 強く(adverb) + して(doing) = "making [me] strong." This is a causative: Christ CAUSES Paul to become strong. Beautiful theological precision!'},
+        {t:'どんな〜でも — "No Matter What"',b:'どんな = what kind of. でも = even/any. Together: "no matter what kind of thing." It emphasizes the UNLIMITED scope of what Paul can do through Christ.'},
+      ],
+      structure:[
+        {label:'"Through Him"',text:'方によって',color:'#a87de8'},
+        {label:'Subject',text:'私は',color:'#5ab4f0'},
+        {label:'Anything',text:'どんなことでも',color:'#5ecb8a'},
+        {label:'Can do',text:'できます',color:'#f07070'},
+      ],
+      fill:{sentence:'私を___くしてくださる方によって、私はどんなことでも___ます。',blanks:['強','でき'],hints:['strong','can do']}
+    }
+  }
+},
+{
+  ref:'Romans 12:2', cat:'STRENGTH',
+  en:'Do not be conformed to this world, but be transformed by the renewal of your mind.',
+  langs:{
+    zh:{
+      full:'不要效法这个世界，只要心意更新而变化。',
+      roman:'Bùyào xiàofǎ zhège shìjiè, zhǐyào xīnyì gēngxīn ér biànhuà.',
+      words:[
+        {w:'不要',r:'bùyào',m:"don't / do not",pos:'other'},
+        {w:'效法',r:'xiàofǎ',m:'conform to / imitate / follow the pattern of',pos:'verb'},
+        {w:'这个',r:'zhège',m:'this',pos:'pron'},
+        {w:'世界',r:'shìjiè',m:'world',pos:'noun'},
+        {w:'只要',r:'zhǐyào',m:'but rather / only need to',pos:'conj'},
+        {w:'心意',r:'xīnyì',m:'mind / heart-mind / thinking',pos:'noun'},
+        {w:'更新',r:'gēngxīn',m:'renewal / renew',pos:'verb'},
+        {w:'而',r:'ér',m:'and (by this) / thereby',pos:'conj'},
+        {w:'变化',r:'biànhuà',m:'be transformed / change',pos:'verb'},
+      ],
+      grammar:[
+        {t:'不要 — Negative Command',b:'不要 + verb = "Do not [verb]." It\'s the imperative negative in Chinese. 不要效法 = "Do not conform/imitate." Simple, direct, powerful.'},
+        {t:'只要 — "But rather / All you need"',b:'只 = only. 要 = need/want. 只要 contrasts with 不要: "Don\'t do X, but DO Y." It\'s a contrastive conjunction showing the alternative.'},
+        {t:'心意 — Heart-Mind',b:'心(heart) + 意(intention/mind) = 心意. Chinese doesn\'t separate heart from mind like English often does. This word captures the WHOLE inner life — thought, will, emotion together.'},
+        {t:'而 — Sequential Connector',b:'而 links two verbs: 更新(renew) 而 变化(be transformed). The renewal LEADS TO transformation. It\'s not just a list — it\'s cause and effect woven together.'},
+      ],
+      structure:[
+        {label:'Negative command',text:'不要效法',color:'#f07070'},
+        {label:'Object',text:'这个世界',color:'#5ecb8a'},
+        {label:'Contrast',text:'只要',color:'#f0a050'},
+        {label:'By renewal',text:'心意更新',color:'#a87de8'},
+        {label:'Result',text:'变化',color:'#5ab4f0'},
+      ],
+      fill:{sentence:'不要___法这个世界，只要心意___新而变化。',blanks:['效','更'],hints:['conform/imitate','renew']}
+    },
+    ko:{
+      full:'너희는 이 세대를 본받지 말고 오직 마음을 새롭게 함으로 변화를 받으라.',
+      roman:'Neohuineun i sedae-reul bonbatji malgo ojik ma-eum-eul saelob-ge hameu-ro byeonhwa-reul badeurra.',
+      words:[
+        {w:'너희는',r:'neohuineun',m:'you (plural, topic)',pos:'pron'},
+        {w:'이',r:'i',m:'this',pos:'pron'},
+        {w:'세대를',r:'sedae-reul',m:'age / generation (object)',pos:'noun'},
+        {w:'본받지 말고',r:'bonbatji malgo',m:'do not conform to / do not follow',pos:'verb'},
+        {w:'오직',r:'ojik',m:'only / but rather',pos:'conj'},
+        {w:'마음을',r:'ma-eum-eul',m:'mind / heart (object)',pos:'noun'},
+        {w:'새롭게',r:'saelob-ge',m:'newly / in a new way',pos:'adj'},
+        {w:'함으로',r:'hameu-ro',m:'by doing / through doing',pos:'verb'},
+        {w:'변화를',r:'byeonhwa-reul',m:'transformation (object)',pos:'noun'},
+        {w:'받으라',r:'badeurra',m:'receive! (imperative)',pos:'verb'},
+      ],
+      grammar:[
+        {t:'-지 말고 — Negative + Contrast',b:'-지 말다 = "do not [verb]." -고 connects to the next clause. 본받지 말고 = "do not conform, but instead..." One ending carries both prohibition AND contrast.'},
+        {t:'마음 — The Korean Heart-Mind',b:'마음 is the seat of thought, will, and emotion in Korean — like 心意 in Chinese. It\'s more than just "mind" (머리) or "heart" (심장). 마음을 새롭게 = renewing the whole inner person.'},
+        {t:'-게 함으로 — "By Making/Doing"',b:'새롭게 함으로 = "by making [it] new / through renewal." -게 makes an adjective into a manner adverb. 함으로 = "by doing." The renewal is the MEANS of transformation.'},
+        {t:'받으라 — Imperative Form',b:'받다 = to receive. -으라 is a direct imperative ending: "Receive!" Paul commands: be transformed. The passive receive shows transformation is something God does IN us.'},
+      ],
+      structure:[
+        {label:'Subject',text:'너희는',color:'#5ab4f0'},
+        {label:'Negative command',text:'본받지 말고',color:'#f07070'},
+        {label:'Means',text:'마음 새롭게 함으로',color:'#a87de8'},
+        {label:'Imperative',text:'변화를 받으라',color:'#5ecb8a'},
+      ],
+      fill:{sentence:'너희는 이 세대를 ___지 말고 오직 마음을 새롭게 함으로 ___를 받으라.',blanks:['본받','변화'],hints:['conform','transformation']}
+    },
+    ja:{
+      full:'この世と調子を合わせてはいけません。むしろ、心の一新によって自分を変えていただきなさい。',
+      roman:'Kono yo to choshi wo awasete wa ikemasen. Mushiro, kokoro no isshin ni yotte jibun wo kaete itadakinasai.',
+      words:[
+        {w:'この世',r:'kono yo',m:'this world / this age',pos:'noun'},
+        {w:'と',r:'to',m:'with / to (particle)',pos:'particle'},
+        {w:'調子を合わせて',r:'choshi wo awasete',m:'tune oneself to / conform / match the rhythm',pos:'verb'},
+        {w:'はいけません',r:'wa ikemasen',m:'must not / should not',pos:'other'},
+        {w:'むしろ',r:'mushiro',m:'rather / instead / on the contrary',pos:'conj'},
+        {w:'心',r:'kokoro',m:'heart / mind / spirit',pos:'noun'},
+        {w:'の一新',r:'no isshin',m:'renewal / complete refreshing',pos:'noun'},
+        {w:'によって',r:'ni yotte',m:'through / by means of',pos:'prep'},
+        {w:'自分',r:'jibun',m:'yourself / oneself',pos:'pron'},
+        {w:'変えて',r:'kaete',m:'change / transform (て-form)',pos:'verb'},
+        {w:'いただきなさい',r:'itadakinasai',m:'please receive / let yourself be (humble imperative)',pos:'verb'},
+      ],
+      grammar:[
+        {t:'調子を合わせる — "Conform" (Lit. Match the Rhythm)',b:'調子 = rhythm/tune. 合わせる = to match/align. "Do not match your rhythm to this world." The translator used MUSICAL language — beautiful! Don\'t let the world set your tempo.'},
+        {t:'はいけません — Prohibition',b:'〜てはいけません = "must not / it\'s not okay to [do]." This is the standard prohibition form in Japanese. はいけません literally means "it doesn\'t go well" = it\'s not acceptable.'},
+        {t:'むしろ — Contrast Word',b:'むしろ means "rather / instead." It pivots from the prohibition to the command: DON\'T conform, RATHER be transformed. Same function as 只要 (Chinese) and 오직 (Korean).'},
+        {t:'いただきなさい — Humble Imperative',b:'いただく = to receive (humble). なさい = command. Together: "Please humbly receive [transformation]." It frames transformation as something you RECEIVE from God, not self-achieve.'},
+      ],
+      structure:[
+        {label:'Prohibition',text:'合わせてはいけません',color:'#f07070'},
+        {label:'Contrast',text:'むしろ',color:'#f0a050'},
+        {label:'Means',text:'心の一新によって',color:'#a87de8'},
+        {label:'Command',text:'変えていただきなさい',color:'#5ecb8a'},
+      ],
+      fill:{sentence:'この世と調子を合わせては___ません。むしろ、心の一新によって自分を___ていただきなさい。',blanks:['いけ','変え'],hints:['must not','change/transform']}
+    }
+  }
+},
+{
+  ref:'John 14:27', cat:'PEACE',
+  en:'Peace I leave with you; my peace I give to you. Let not your hearts be troubled, neither let them be afraid.',
+  langs:{
+    zh:{
+      full:'我留下平安给你们；我将我的平安赐给你们。你们心里不要忧愁，也不要胆怯。',
+      roman:'Wǒ liú xià píng\'ān gěi nǐmen; wǒ jiāng wǒ de píng\'ān cì gěi nǐmen. Nǐmen xīnlǐ bùyào yōuchóu, yě bùyào dǎnqiè.',
+      words:[
+        {w:'留下',r:'liú xià',m:'leave behind / bequeath',pos:'verb'},
+        {w:'平安',r:'píng\'ān',m:'peace / shalom',pos:'noun'},
+        {w:'给',r:'gěi',m:'give / to',pos:'verb'},
+        {w:'你们',r:'nǐmen',m:'you all / you (plural)',pos:'pron'},
+        {w:'将',r:'jiāng',m:'(formal: I give...)',pos:'particle'},
+        {w:'赐给',r:'cì gěi',m:'bestow / grant (formal giving)',pos:'verb'},
+        {w:'心里',r:'xīnlǐ',m:'in your heart / inside',pos:'noun'},
+        {w:'不要',r:'bùyào',m:"do not",pos:'other'},
+        {w:'忧愁',r:'yōuchóu',m:'be troubled / anxious / sorrowful',pos:'verb'},
+        {w:'也',r:'yě',m:'also / neither',pos:'conj'},
+        {w:'胆怯',r:'dǎnqiè',m:'be afraid / cowardly / fearful',pos:'verb'},
+      ],
+      grammar:[
+        {t:'留下 vs 赐给 — Two "Give" Words',b:'留下 = leave behind (ordinary). 赐给 = to bestow/grant (royal/divine). Jesus uses both: He LEAVES peace like a gift, and BESTOWS it like a king. Two depths of giving!'},
+        {t:'心里 — "In the Heart"',b:'心(heart) + 里(inside/within). 心里不要忧愁 = "Do not be troubled INSIDE your heart." Chinese is precise about the LOCATION of peace — it\'s internal, not circumstantial.'},
+        {t:'也 — "Also / Neither"',b:'也 can mean "also" or "neither." Here: 不要忧愁，也不要胆怯 = "do not be troubled, NEITHER be afraid." 也 links two parallel negative commands.'},
+      ],
+      structure:[
+        {label:'Object (peace)',text:'平安',color:'#5ecb8a'},
+        {label:'Subject',text:'我',color:'#5ab4f0'},
+        {label:'Give/leave',text:'留下/赐给',color:'#f07070'},
+        {label:'Prohibition',text:'不要忧愁',color:'#a87de8'},
+      ],
+      fill:{sentence:'我留下___给你们。你们心里不要___，也不要胆怯。',blanks:['平安','忧愁'],hints:['peace','be troubled']}
+    },
+    ko:{
+      full:'평안을 너희에게 끼치노니 곧 나의 평안을 너희에게 주노라. 너희는 마음에 근심하지도 말고 두려워하지도 말라.',
+      roman:'Pyeongan-eul neohuiege kkichinooni gok naui pyeongan-eul neohuiege junoora. Neohuineun ma-eume geunsimhajido malgo duryeowohajido malra.',
+      words:[
+        {w:'평안',r:'pyeongan',m:'peace / shalom',pos:'noun'},
+        {w:'을',r:'eul',m:'(object particle)',pos:'particle'},
+        {w:'끼치노니',r:'kkichinooni',m:'leave / bequeath (archaic)',pos:'verb'},
+        {w:'곧',r:'gok',m:'namely / that is / specifically',pos:'conj'},
+        {w:'나의',r:'naui',m:'my',pos:'pron'},
+        {w:'주노라',r:'junoora',m:'I give (formal declaration)',pos:'verb'},
+        {w:'마음에',r:'ma-eume',m:'in the heart/mind',pos:'noun'},
+        {w:'근심하지도',r:'geunsimhajido',m:'be troubled/worried (either)',pos:'verb'},
+        {w:'말고',r:'malgo',m:'do not (and...)',pos:'other'},
+        {w:'두려워하지도',r:'duryeowohajido',m:'be afraid (either)',pos:'verb'},
+        {w:'말라',r:'malra',m:'do not! (imperative)',pos:'other'},
+      ],
+      grammar:[
+        {t:'곧 — Clarifying Word',b:'곧 means "namely / that is / I mean specifically." Jesus leaves peace, and then clarifies: 곧 나의 평안 = "namely MY peace." Not generic peace — HIS peace. 곧 adds precision.'},
+        {t:'-지도 말고 / -지도 말라',b:'-지도 말다 = "don\'t even [verb]." The 도 adds emphasis: "not even." 근심하지도 말고 = "don\'t even be troubled." 말라 is the final imperative. Together: a two-part prohibition.'},
+        {t:'Archaic Verb Endings',b:'끼치노니 and 주노라 are classical Korean (used in KJV-style translation). -노니 = declarative present. -노라 = "I declare I give." Formal scripture endings carry weight and authority.'},
+      ],
+      structure:[
+        {label:'Object',text:'평안을',color:'#5ecb8a'},
+        {label:'Subject',text:'나의',color:'#5ab4f0'},
+        {label:'Give',text:'주노라',color:'#f07070'},
+        {label:'Prohibition',text:'근심/두려워하지도 말라',color:'#a87de8'},
+      ],
+      fill:{sentence:'___ 을 너희에게 끼치노니 곧 나의 ___을 너희에게 주노라.',blanks:['평안','평안'],hints:['peace','peace (His specific peace)']}
+    },
+    ja:{
+      full:'わたしはあなたがたに平安を残します。わたしの平安を与えます。あなたがたは心を騒がしてはなりません。恐れてもなりません。',
+      roman:'Watashi wa anata-gata ni hei-an wo nokoshimasu. Watashi no hei-an wo ataemasu. Anata-gata wa kokoro wo sawagashite wa narimasen. Osorete mo narimasen.',
+      words:[
+        {w:'平安',r:'hei-an',m:'peace',pos:'noun'},
+        {w:'残します',r:'nokoshimasu',m:'leave behind / bequeath',pos:'verb'},
+        {w:'与えます',r:'ataemasu',m:'give',pos:'verb'},
+        {w:'心',r:'kokoro',m:'heart / mind / spirit',pos:'noun'},
+        {w:'を',r:'wo',m:'(object particle)',pos:'particle'},
+        {w:'騒がして',r:'sawagashite',m:'disturb / agitate / trouble (て-form)',pos:'verb'},
+        {w:'はなりません',r:'wa narimasen',m:'must not / shall not',pos:'other'},
+        {w:'恐れて',r:'osorete',m:'fear / be afraid (て-form)',pos:'verb'},
+        {w:'もなりません',r:'mo narimasen',m:'neither shall',pos:'other'},
+      ],
+      grammar:[
+        {t:'残す vs 与える — Two Verbs for Giving',b:'残す(nokoru) = leave behind. 与える(ataeru) = give directly. Same theology as Chinese: Jesus LEAVES His peace as inheritance AND GIVES it as a gift. Two actions, one abundant grace.'},
+        {t:'心を騒がす — "Disturb the Heart"',b:'騒がす = to stir up / disturb. 心を騒がす = "to disturb the heart." The image is of a stirred-up lake — troubled, unsettled. Jesus says: don\'t let anyone churn up your inner waters.'},
+        {t:'〜てはなりません — Prohibition',b:'〜てはなりません = "must not [do]." More formal than いけません. 騒がしてはなりません = "you must not disturb [your heart]." もなりません = "neither shall you [fear]."'},
+      ],
+      structure:[
+        {label:'Peace (obj)',text:'平安を',color:'#5ecb8a'},
+        {label:'Leave/Give',text:'残します/与えます',color:'#f07070'},
+        {label:'Heart (obj)',text:'心を',color:'#5ab4f0'},
+        {label:'Must not',text:'騒がしてはなりません',color:'#a87de8'},
+      ],
+      fill:{sentence:'わたしはあなたがたに___を残します。あなたがたは心を___してはなりません。',blanks:['平安','騒が'],hints:['peace','disturb/trouble']}
+    }
+  }
+}
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let lang = 'zh';
+let verseIdx = 0;
+let activeTab = 'explore';
+let xp = 0;
+let quizState = { qIdx:0, score:0, streak:0, questions:[], answered:false };
+let matchState = { cards:[], selected:null, matched:0, total:0 };
+let fillState = { attempts:0 };
+let voices = [];
+
+// ── SPEECH ────────────────────────────────────────────────────────────────────
+function loadVoices(){
+  voices = speechSynthesis.getVoices();
+}
+loadVoices();
+if(speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadVoices;
+
+const LANG_CODES = { zh:'zh-CN', ko:'ko-KR', ja:'ja-JP', en:'en-US' };
+const LANG_FALLBACKS = { zh:['zh','Chinese'], ko:['ko','Korean'], ja:['ja','Japanese'] };
+
+function speak(text, langKey, btnEl){
+  if(speechSynthesis.speaking) speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  const code = LANG_CODES[langKey] || 'en-US';
+  const fallbacks = LANG_FALLBACKS[langKey] || [];
+  let voice = voices.find(v => v.lang === code);
+  if(!voice) voice = voices.find(v => fallbacks.some(f => v.lang.startsWith(f)));
+  if(!voice) voice = voices.find(v => v.lang.startsWith(code.split('-')[0]));
+  if(voice) utter.voice = voice;
+  utter.lang = code;
+  utter.rate = 0.85;
+  if(btnEl){
+    btnEl.classList.add('speaking');
+    utter.onend = () => btnEl.classList.remove('speaking');
+    utter.onerror = () => btnEl.classList.remove('speaking');
+  }
+  speechSynthesis.speak(utter);
+}
+
+function speakIcon(){ return `<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>`; }
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init(){
+  buildVerseRow();
+  renderAll();
+}
+
+function buildVerseRow(){
+  const row = document.getElementById('verseRow');
+  row.innerHTML = VERSES.map((v,i) => `<button class="pill ${i===verseIdx?'active':''}" onclick="selectVerse(${i},this)">${v.ref}</button>`).join('');
+}
+
+function selectVerse(i, el){
+  verseIdx = i;
+  document.querySelectorAll('#verseRow .pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  quizState.qIdx = 0; quizState.score=0; quizState.streak=0; quizState.answered=false;
+  matchState = {cards:[],selected:null,matched:0,total:0};
+  fillMCState = {blankIdx:0,chosen:[],done:false};
+  renderAll();
+}
+
+function setLang(l, el){
+  lang = l;
+  document.querySelectorAll('#langRow .pill').forEach(p=>p.classList.remove('lang-active'));
+  el.classList.add('lang-active');
+  quizState.qIdx=0; quizState.score=0; quizState.streak=0; quizState.answered=false;
+  matchState={cards:[],selected:null,matched:0,total:0};
+  fillMCState={blankIdx:0,chosen:[],done:false};
+  renderAll();
+}
+
+function showTab(tab, el){
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderTab();
+}
+
+function changeVerse(dir){
+  verseIdx = (verseIdx + dir + VERSES.length) % VERSES.length;
+  buildVerseRow();
+  quizState.qIdx=0; quizState.score=0; quizState.streak=0; quizState.answered=false;
+  matchState={cards:[],selected:null,matched:0,total:0};
+  fillMCState={blankIdx:0,chosen:[],done:false};
+  renderAll();
+}
+
+function addXP(pts){
+  xp += pts;
+  const pct = Math.min(100, (xp % 200) / 200 * 100);
+  document.getElementById('xpFill').style.width = pct+'%';
+  const lvl = Math.floor(xp/200)+1;
+  document.getElementById('xpLabel').textContent = `⭐ ${xp} XP — Level ${lvl}`;
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
+function renderAll(){
+  renderVerseHeader();
+  renderTab();
+}
+
+function renderVerseHeader(){
+  const v = VERSES[verseIdx];
+  document.getElementById('verseHeader').innerHTML = `
+    <div class="verse-ref-row">
+      <span class="verse-ref">${v.ref}</span>
+      <span class="cat-badge">${v.cat}</span>
+      <button class="speak-btn" onclick="speak('${v.en.replace(/'/g,"\\'")}','en',this)">${speakIcon()} English</button>
+    </div>
+    <div class="verse-english">${v.en}</div>
+  `;
+}
+
+function renderTab(){
+  const content = document.getElementById('tabContent');
+  if(activeTab === 'explore') content.innerHTML = renderExplore();
+  else if(activeTab === 'grammar') content.innerHTML = renderGrammar();
+  else if(activeTab === 'quiz') { content.innerHTML = renderQuizHTML(); bindQuiz(); }
+  else if(activeTab === 'match') { content.innerHTML = renderMatchHTML(); }
+  else if(activeTab === 'fill') content.innerHTML = renderFill();
+  else if(activeTab === 'speak') content.innerHTML = renderSpeak();
+}
+
+// ── EXPLORE TAB ───────────────────────────────────────────────────────────────
+function renderExplore(){
+  const v = VERSES[verseIdx];
+  const ld = v.langs[lang];
+  const langName = {zh:'Chinese 🇨🇳',ko:'Korean 🇰🇷',ja:'Japanese 🇯🇵'}[lang];
+  const posLegend = [
+    {cls:'pos-name',lbl:'NAME/TITLE'},
+    {cls:'pos-verb',lbl:'VERB'},
+    {cls:'pos-noun',lbl:'NOUN'},
+    {cls:'pos-pron',lbl:'PRONOUN'},
+    {cls:'pos-adj',lbl:'ADJECTIVE'},
+    {cls:'pos-prep',lbl:'PREPOSITION'},
+    {cls:'pos-conj',lbl:'CONJUNCTION'},
+    {cls:'pos-particle',lbl:'PARTICLE'},
+  ];
+
+  const chips = ld.words.map((w,i) => `
+    <div class="word-chip" id="chip${i}" onclick="flipChip(${i})">
+      <div class="word-chip-top">
+        <span class="foreign ${lang}">${w.w}</span>
+        <button class="chip-speak" onclick="event.stopPropagation();speak('${w.w.replace(/'/g,"\\'")}','${lang}',this)">${speakIcon()}</button>
+      </div>
+      <span class="roman">${w.r}</span>
+      <span class="meaning">${w.m}</span>
+      <span class="pos-tag pos-${w.pos}">${w.pos.toUpperCase()}</span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="section-card">
+      <div class="section-title">🔤 FULL VERSE — ${langName}
+        <button class="speak-btn" onclick="speak('${ld.full.replace(/'/g,"\\'")}','${lang}',this)">${speakIcon()} Listen</button>
+      </div>
+      <div class="trans-block">
+        <div class="trans-text ${lang}">${ld.full}</div>
+        <div class="trans-roman">${ld.roman}</div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">📦 WORD-BY-WORD BREAKDOWN <span style="font-size:.65rem;color:var(--muted);font-family:'Nunito',sans-serif;letter-spacing:0">(tap any word • speaker = hear it)</span></div>
+      <div class="pos-legend">${posLegend.map(p=>`<span class="legend-chip ${p.cls}">${p.lbl}</span>`).join('')}</div>
+      <div class="word-grid">${chips}</div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">🏗️ SENTENCE STRUCTURE</div>
+      <div class="struct-wrap">
+        <div class="struct-row">
+          ${ld.structure.map(s=>`
+            <div>
+              <div class="struct-box" style="background:${s.color}22;border:1.5px solid ${s.color};color:${s.color}">${s.text}</div>
+              <div class="struct-label">${s.label}</div>
+            </div>
+            <div class="struct-arrow">→</div>
+          `).join('').replace(/→\s*$/,'')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function flipChip(i){ document.getElementById('chip'+i)?.classList.toggle('flipped'); }
+
+// ── GRAMMAR TAB ───────────────────────────────────────────────────────────────
+function renderGrammar(){
+  const v = VERSES[verseIdx];
+  const ld = v.langs[lang];
+  const langName = {zh:'Chinese 🇨🇳',ko:'Korean 🇰🇷',ja:'Japanese 🇯🇵'}[lang];
+  const blocks = ld.grammar.map(g=>`
+    <div class="grammar-block">
+      <h4>${g.t}</h4>
+      <p>${g.b}</p>
+    </div>
+  `).join('');
+
+  const compares = {
+    zh: `Chinese is SVO (Subject-Verb-Object) like English — the most learner-friendly order! Key challenge: particles like 的, 了, 着 carry heavy meaning. No verb conjugation for tense — context and time words do that work.`,
+    ko: `Korean is SOV (Subject-Object-Verb) — the verb always comes LAST. Particles are mandatory labels on every noun. Verb endings encode tense, formality, and speaker relationship simultaneously.`,
+    ja: `Japanese is SOV like Korean. The は/が/を/に particle system marks every noun's grammatical role. Verb endings show formality levels (plain vs. polite vs. honorific). Reading scripture in Japanese reveals layers of reverence built into the language.`
+  };
+
+  return `
+    <div class="section-card">
+      <div class="section-title">📖 GRAMMAR NOTES — ${langName}</div>
+      ${blocks}
+    </div>
+    <div class="section-card">
+      <div class="section-title">🗺️ LANGUAGE OVERVIEW</div>
+      <div class="grammar-block" style="border-color:var(--teal)">
+        <h4 style="color:var(--teal)">How ${langName.split(' ')[0]} Works</h4>
+        <p>${compares[lang]}</p>
+      </div>
+    </div>
+  `;
+}
+
+// ── QUIZ TAB ──────────────────────────────────────────────────────────────────
+function buildQuizQuestions(){
+  const ld = VERSES[verseIdx].langs[lang];
+  const words = ld.words;
+  const qs = [];
+
+  // Q type 1: What does this word mean?
+  words.slice(0,6).forEach(w=>{
+    const wrong = words.filter(x=>x.w!==w.w).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.m);
+    const opts = shuffle([w.m,...wrong]);
+    qs.push({type:'meaning', qText:'What does this word mean?', foreign:w.w, correct:w.m, options:opts});
+  });
+
+  // Q type 2: Which word means X?
+  words.slice(0,5).forEach(w=>{
+    const wrong = words.filter(x=>x.w!==w.w).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.w);
+    const opts = shuffle([w.w,...wrong]);
+    qs.push({type:'word', qText:`Which word means "${w.m}"?`, foreign:null, correct:w.w, options:opts, cls:lang});
+  });
+
+  // Q type 3: What part of speech?
+  words.filter(w=>['verb','noun','name'].includes(w.pos)).slice(0,4).forEach(w=>{
+    const allPos = ['noun','verb','adjective','particle','pronoun','conjunction'];
+    const wrong = allPos.filter(p=>p!==w.pos).sort(()=>Math.random()-.5).slice(0,3);
+    const opts = shuffle([w.pos,...wrong]);
+    qs.push({type:'pos', qText:'What part of speech is this?', foreign:w.w, correct:w.pos, options:opts});
+  });
+
+  return shuffle(qs).slice(0,8);
+}
+
+function shuffle(a){ return [...a].sort(()=>Math.random()-.5); }
+
+function renderQuizHTML(){
+  if(!quizState.questions.length || quizState.qIdx===0) quizState.questions = buildQuizQuestions();
+  const q = quizState.questions[quizState.qIdx];
+  if(!q) return `<div class="section-card"><div class="empty"><span class="trophy">🏆</span>Quiz complete!<br>Score: ${quizState.score}/${quizState.questions.length}</div></div>`;
+
+  return `
+    <div class="section-card quiz-wrap">
+      <div class="quiz-score-row">
+        <span class="score-badge">✅ ${quizState.score} correct</span>
+        <span style="color:var(--muted);font-size:.78rem">${quizState.qIdx+1} / ${quizState.questions.length}</span>
+        <span class="streak-badge">🔥 ${quizState.streak} streak</span>
+      </div>
+      <div class="quiz-q">
+        <div class="q-text">${q.qText}</div>
+        ${q.foreign ? `<div class="q-foreign ${q.cls||lang}">${q.foreign}
+          <button class="speak-btn" style="font-size:.7rem;padding:.2rem .5rem;margin-left:.5rem" onclick="speak('${q.foreign}','${lang}',this)">${speakIcon()}</button>
+        </div>` : ''}
+        <div class="quiz-options" id="quizOpts">
+          ${q.options.map((o,i)=>`<button class="quiz-opt ${q.cls&&q.type==='word'?lang:''}" id="qopt${i}" onclick="answerQuiz('${o.replace(/'/g,"\\'")}',${i})">${o}</button>`).join('')}
+        </div>
+        <div class="quiz-feedback" id="qFeedback"></div>
+        <button class="quiz-next-btn" id="qNextBtn" onclick="nextQuizQ()">Next →</button>
+      </div>
+    </div>
+  `;
+}
+
+function bindQuiz(){}
+
+function answerQuiz(answer, idx){
+  if(quizState.answered) return;
+  quizState.answered = true;
+  const q = quizState.questions[quizState.qIdx];
+  const isCorrect = answer === q.correct;
+  const fb = document.getElementById('qFeedback');
+  document.querySelectorAll('.quiz-opt').forEach((btn,i)=>{
+    btn.disabled = true;
+    if(btn.textContent === q.correct) btn.classList.add('correct');
+  });
+  if(!isCorrect) document.getElementById('qopt'+idx).classList.add('wrong');
+  if(isCorrect){
+    quizState.score++; quizState.streak++;
+    const bonus = quizState.streak >= 3 ? 20 : 10;
+    addXP(bonus);
+    fb.textContent = quizState.streak>=3 ? `🔥 ${quizState.streak} in a row! +${bonus} XP` : '✅ Correct! +10 XP';
+    fb.className = 'quiz-feedback show ok';
+  } else {
+    quizState.streak = 0;
+    fb.textContent = `❌ The answer was: ${q.correct}`;
+    fb.className = 'quiz-feedback show bad';
+  }
+  document.getElementById('qNextBtn').classList.add('show');
+}
+
+function nextQuizQ(){
+  quizState.qIdx++;
+  quizState.answered = false;
+  document.getElementById('tabContent').innerHTML = renderQuizHTML();
+  bindQuiz();
+}
+
+// ── MATCH GAME ────────────────────────────────────────────────────────────────
+function renderMatchHTML(){
+  const ld = VERSES[verseIdx].langs[lang];
+  const pool = ld.words.slice(0,6);
+
+  if(!matchState.cards.length){
+    const pairs = pool.map(w=>([
+      {id:'f-'+w.w, text:w.w, type:'foreign', cls:lang, pair:w.w},
+      {id:'e-'+w.w, text:w.m.split('/')[0].trim(), type:'english', cls:'', pair:w.w}
+    ])).flat();
+    matchState.cards = shuffle(pairs);
+    matchState.total = pool.length;
+    matchState.matched = 0;
+    matchState.selected = null;
+  }
+
+  const allMatched = matchState.matched === matchState.total;
+  const cardsHTML = matchState.cards.map(c=>`
+    <div class="match-card ${c.cls} ${c.matched?'matched':''} ${matchState.selected?.id===c.id?'selected':''}" 
+         id="mc-${c.id}" onclick="selectMatch('${c.id}')">
+      <span class="inner">${c.text}${c.cls&&!c.matched?`<button class="speak-btn" style="margin-top:.3rem;font-size:.65rem;padding:.15rem .4rem;display:flex" onclick="event.stopPropagation();speak('${c.text}','${lang}',this)">${speakIcon()}</button>`:''}</span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="section-card">
+      <div class="section-title">🔗 MATCH THE WORD — Connect ${lang==='zh'?'Chinese':'Korean/Japanese'} to English</div>
+      ${allMatched ? `<div class="empty"><span class="trophy">🎉</span>All matched! Great work!<br><button class="nav-btn primary" style="margin-top:.8rem" onclick="matchState={cards:[],selected:null,matched:0,total:0};renderTab()">Play Again</button></div>`
+      : `<div class="match-grid" id="matchGrid">${cardsHTML}</div><p style="color:var(--muted);font-size:.75rem;text-align:center;margin-top:.8rem">✦ Matched: ${matchState.matched}/${matchState.total}</p>`}
+    </div>
+  `;
+}
+
+function selectMatch(id){
+  const card = matchState.cards.find(c=>c.id===id);
+  if(!card || card.matched) return;
+  if(!matchState.selected){
+    matchState.selected = card;
+    renderTab();
+    return;
+  }
+  const prev = matchState.selected;
+  if(prev.id === id){ matchState.selected = null; renderTab(); return; }
+  if(prev.pair === card.pair && prev.type !== card.type){
+    // correct
+    matchState.cards = matchState.cards.map(c=> c.pair===card.pair ? {...c,matched:true} : c);
+    matchState.matched++;
+    matchState.selected = null;
+    addXP(15);
+    renderTab();
+  } else {
+    // wrong
+    const g1 = document.getElementById('mc-'+prev.id);
+    const g2 = document.getElementById('mc-'+id);
+    if(g1) g1.classList.add('wrong-flash');
+    if(g2) g2.classList.add('wrong-flash');
+    setTimeout(()=>{ matchState.selected=null; renderTab(); },500);
+  }
+}
+
+// ── FILL IN THE BLANK (Multiple Choice) ─────────────────────────────────────
+let fillMCState = { blankIdx:0, chosen:[], done:false };
+
+function renderFill(){
+  const v = VERSES[verseIdx];
+  const ld = v.langs[lang];
+  const f = ld.fill;
+  const blankCount = (f.sentence.match(/___/g)||[]).length;
+
+  // Reset if switching verse/lang
+  if(fillMCState.chosen.length !== blankCount){
+    fillMCState = { blankIdx:0, chosen: Array(blankCount).fill(null), done:false };
+  }
+
+  // Build sentence with filled slots
+  let sIdx = 0;
+  const fontStyle = lang==='zh'?'font-family:"Noto Sans SC",sans-serif':lang==='ko'?'font-family:"Noto Sans KR",sans-serif':lang==='ja'?'font-family:"Noto Sans JP",sans-serif':'';
+  const sentHTML = f.sentence.replace(/___/g, ()=>{
+    const i = sIdx++;
+    const chosen = fillMCState.chosen[i];
+    const isActive = i === fillMCState.blankIdx && !fillMCState.done;
+    let slotStyle = `display:inline-block;min-width:70px;text-align:center;padding:.1rem .5rem;border-radius:6px;font-weight:800;margin:0 .15rem;`;
+    if(chosen === null){
+      slotStyle += isActive
+        ? 'border-bottom:2px solid var(--gold);color:var(--gold);animation:blink .8s ease infinite alternate;'
+        : 'border-bottom:2px dashed var(--border);color:var(--muted);';
+      return `<span style="${slotStyle}" id="slot${i}">${isActive?'▸ ?':'?'}</span>`;
+    } else {
+      const correct = chosen === f.blanks[i];
+      slotStyle += correct
+        ? 'background:rgba(94,203,138,.15);color:var(--green);border:1.5px solid rgba(94,203,138,.4);'
+        : 'background:rgba(240,112,112,.1);color:var(--rose);border:1.5px solid rgba(240,112,112,.3);';
+      return `<span style="${slotStyle}" id="slot${i}">${chosen} ${correct?'✓':'✗'}</span>`;
+    }
+  });
+
+  // Build choices for current blank
+  const curIdx = fillMCState.blankIdx;
+  const correct = f.blanks[curIdx];
+  const allWords = ld.words.map(w=>w.w);
+  const distractors = allWords.filter(w=>w!==correct).sort(()=>Math.random()-.5).slice(0,3);
+  const choices = shuffle([correct,...distractors]);
+
+  const allDone = fillMCState.done || fillMCState.chosen.every(c=>c!==null);
+  const correctCount = fillMCState.chosen.filter((c,i)=>c===f.blanks[i]).length;
+
+  return `
+    <style>@keyframes blink{from{opacity:.5}to{opacity:1}}</style>
+    <div class="section-card">
+      <div class="section-title">✏️ FILL IN THE BLANK — Tap the correct word</div>
+      <div style="margin-bottom:.8rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <button class="speak-btn" onclick="speak('${ld.full.replace(/'/g,"\\'")}','${lang}',this)">${speakIcon()} Hear verse</button>
+        <span style="font-size:.75rem;color:var(--muted)">Blank ${Math.min(curIdx+1,blankCount)} of ${blankCount}</span>
+      </div>
+
+      <div style="font-size:1.1rem;line-height:2.4;margin-bottom:1.2rem;${fontStyle}">${sentHTML}</div>
+
+      ${allDone ? `
+        <div style="text-align:center;padding:1rem;background:${correctCount===blankCount?'rgba(94,203,138,.12)':'rgba(245,200,66,.1)'};border-radius:10px;border:1.5px solid ${correctCount===blankCount?'rgba(94,203,138,.3)':'rgba(245,200,66,.3)'}">
+          <div style="font-size:1.5rem;font-weight:900;color:${correctCount===blankCount?'var(--green)':'var(--gold)'}">
+            ${correctCount===blankCount?'🎉 Perfect!':'👍 '+correctCount+'/'+blankCount+' correct'}
+          </div>
+          <div style="font-size:.8rem;color:var(--muted);margin-top:.3rem">
+            ${correctCount===blankCount?'All blanks correct! +25 XP':'Good effort! Try again to improve.'}
+          </div>
+          <button class="nav-btn primary" style="margin-top:.8rem" onclick="resetFillMC()">Try Again 🔄</button>
+        </div>
+      ` : `
+        <div style="margin-bottom:.6rem;font-size:.78rem;color:var(--muted);font-weight:700">
+          Choose the missing word:
+          <span style="color:var(--sky);font-style:italic;font-size:.72rem"> (hint: "${f.hints[curIdx]}")</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+          ${choices.map(c=>`
+            <button class="quiz-opt ${lang}" style="${lang==='zh'?'font-family:"Noto Sans SC",sans-serif;font-size:1.1rem':lang==='ko'?'font-family:"Noto Sans KR",sans-serif;font-size:1rem':lang==='ja'?'font-family:"Noto Sans JP",sans-serif;font-size:1rem':''}"
+              onclick="fillMCPick('${c.replace(/'/g,"\\'")}',${curIdx})">
+              ${c}
+            </button>
+          `).join('')}
+        </div>
+      `}
+      <div style="margin-top:.8rem;font-size:.72rem;color:var(--muted);font-style:italic">
+        Romanization: ${f.blanks.map((b,i)=>{const w=ld.words.find(x=>x.w===b);return w?`"${w.r}"`:''}).filter(Boolean).join(' · ')}
+      </div>
+    </div>
+  `;
+}
+
+function fillMCPick(chosen, idx){
+  const f = VERSES[verseIdx].langs[lang].fill;
+  fillMCState.chosen[idx] = chosen;
+  const correct = chosen === f.blanks[idx];
+  if(correct){ addXP(12); }
+  // advance to next unfilled blank
+  const next = fillMCState.chosen.findIndex(c=>c===null);
+  fillMCState.blankIdx = next === -1 ? idx : next;
+  if(next === -1){ fillMCState.done = true; if(fillMCState.chosen.every((c,i)=>c===f.blanks[i])) addXP(13); }
+  document.getElementById('tabContent').innerHTML = renderFill();
+}
+
+function resetFillMC(){
+  fillMCState = {blankIdx:0, chosen:[], done:false};
+  document.getElementById('tabContent').innerHTML = renderFill();
+}
+
+
+// ── SPEAK IT TAB ──────────────────────────────────────────────────────────────
+let speakState = {
+  mode: 'word',   // 'word' | 'phrase'
+  wordIdx: 0,
+  recording: false,
+  recognition: null,
+  scores: [],     // per-word scores this session
+};
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function renderSpeak(){
+  const ld = VERSES[verseIdx].langs[lang];
+  const words = ld.words;
+  const wi = Math.min(speakState.wordIdx, words.length - 1);
+  const word = words[wi];
+  const hasRecog = !!SpeechRecognition;
+
+  const dots = words.map((_, i) => {
+    let cls = 'word-dot';
+    if(i < wi) cls += ' done';
+    else if(i === wi) cls += ' current';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  const noRecogMsg = !hasRecog ? `
+    <div style="background:rgba(240,160,80,.1);border:1.5px solid rgba(240,160,80,.3);border-radius:10px;padding:.8rem 1rem;margin-bottom:1rem;font-size:.82rem;color:#f0a050;">
+      ⚠️ Your browser doesn't support speech recognition. Try <strong>Chrome</strong> or <strong>Edge</strong> on desktop/Android for this feature. You can still listen and practice!
+    </div>` : '';
+
+  const wordPanel = `
+    <div class="word-nav">
+      <span class="word-counter">Word ${wi+1} of ${words.length}</span>
+      <div class="word-dots">${dots}</div>
+      <div style="display:flex;gap:.4rem">
+        <button class="nav-btn" style="padding:.3rem .7rem;font-size:.72rem" onclick="speakNav(-1)">←</button>
+        <button class="nav-btn" style="padding:.3rem .7rem;font-size:.72rem" onclick="speakNav(1)">→</button>
+      </div>
+    </div>
+    <div class="speak-word-card" id="speakCard">
+      <div class="speak-target ${lang}" id="speakTarget">${word.w}</div>
+      <div class="speak-roman-hint" id="speakRoman">${word.r}</div>
+      <div class="speak-meaning">${word.m}</div>
+      <button class="speak-btn" style="margin:.2rem auto .8rem;display:flex" onclick="speak('${word.w.replace(/'/g,"\\'")}','${lang}',this)">${speakIcon()} Hear it</button>
+      <div style="text-align:center">
+        <button class="mic-btn" id="micBtn" onclick="toggleRecording('${word.w.replace(/'/g,"\\'")}','${lang}')" ${!hasRecog?'disabled':''}>🎤</button>
+        <div class="mic-label" id="micLabel">TAP TO SPEAK</div>
+      </div>
+      <div class="waveform idle" id="waveform">
+        ${Array(9).fill('<div class="wave-bar"></div>').join('')}
+      </div>
+      <div class="result-block" id="resultBlock">
+        <div class="result-label" id="resultLabel"></div>
+        <div class="result-score" id="resultScore"></div>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="scoreBarFill"></div></div>
+        <div class="result-heard" id="resultHeard"></div>
+      </div>
+    </div>
+  `;
+
+  const phrasePanel = `
+    <div class="speak-word-card" id="speakCard">
+      <div class="phrase-display ${lang}" id="speakTarget">${ld.full}</div>
+      <div style="font-size:.75rem;color:var(--muted);font-style:italic;margin-bottom:.5rem">${ld.roman}</div>
+      <button class="speak-btn" style="margin:.2rem auto .8rem;display:flex" onclick="speak('${ld.full.replace(/'/g,"\\'")}','${lang}',this)">${speakIcon()} Hear full verse</button>
+      <div style="text-align:center">
+        <button class="mic-btn" id="micBtn" onclick="toggleRecording('${ld.full.replace(/'/g,"\\'")}','${lang}')" ${!hasRecog?'disabled':''}>🎤</button>
+        <div class="mic-label" id="micLabel">TAP TO SPEAK</div>
+      </div>
+      <div class="waveform idle" id="waveform">
+        ${Array(9).fill('<div class="wave-bar"></div>').join('')}
+      </div>
+      <div class="result-block" id="resultBlock">
+        <div class="result-label" id="resultLabel"></div>
+        <div class="result-score" id="resultScore"></div>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="scoreBarFill"></div></div>
+        <div class="result-heard" id="resultHeard"></div>
+      </div>
+    </div>
+  `;
+
+  const sessionStats = speakState.scores.length ? (() => {
+    const avg = Math.round(speakState.scores.reduce((a,b)=>a+b,0)/speakState.scores.length);
+    return `<div style="text-align:center;margin-top:.5rem;font-size:.78rem;color:var(--muted)">Session avg: <strong style="color:var(--gold)">${avg}%</strong> over ${speakState.scores.length} attempt${speakState.scores.length>1?'s':''}</div>`;
+  })() : '';
+
+  return `
+    <div class="section-card speak-mode-wrap">
+      <div class="section-title">🎤 SPEAK IT — Pronunciation Practice</div>
+      ${noRecogMsg}
+      <div class="mode-toggle">
+        <button class="mode-pill ${speakState.mode==='word'?'active':''}" onclick="setSpeakMode('word')">Word by Word</button>
+        <button class="mode-pill ${speakState.mode==='phrase'?'active':''}" onclick="setSpeakMode('phrase')">Full Verse</button>
+      </div>
+      ${speakState.mode==='word' ? wordPanel : phrasePanel}
+      ${sessionStats}
+      <div style="margin-top:.8rem;padding:.7rem;background:var(--card2);border-radius:8px;font-size:.76rem;color:var(--muted);line-height:1.7">
+        💡 <strong style="color:var(--text)">Tips:</strong> Speak clearly at a natural pace. Chrome/Edge work best.
+        The score compares what the app heard to the target — aim for 70%+!
+      </div>
+    </div>
+  `;
+}
+
+function setSpeakMode(mode){
+  if(speakState.recording) stopRecording();
+  speakState.mode = mode;
+  speakState.scores = [];
+  document.getElementById('tabContent').innerHTML = renderSpeak();
+}
+
+function speakNav(dir){
+  if(speakState.recording) stopRecording();
+  const ld = VERSES[verseIdx].langs[lang];
+  speakState.wordIdx = Math.max(0, Math.min(ld.words.length-1, speakState.wordIdx + dir));
+  document.getElementById('tabContent').innerHTML = renderSpeak();
+}
+
+function toggleRecording(target, langKey){
+  if(speakState.recording){ stopRecording(); return; }
+  startRecording(target, langKey);
+}
+
+function startRecording(target, langKey){
+  if(!SpeechRecognition) return;
+  const rec = new SpeechRecognition();
+  rec.lang = LANG_CODES[langKey] || 'zh-CN';
+  rec.continuous = false;
+  rec.interimResults = false;
+  rec.maxAlternatives = 5;
+  speakState.recognition = rec;
+  speakState.recording = true;
+
+  const micBtn = document.getElementById('micBtn');
+  const micLabel = document.getElementById('micLabel');
+  const waveform = document.getElementById('waveform');
+  const speakCard = document.getElementById('speakCard');
+  if(micBtn){ micBtn.classList.add('recording'); micBtn.textContent='⏹'; }
+  if(micLabel) micLabel.textContent = 'LISTENING…';
+  if(waveform){ waveform.classList.remove('idle'); waveform.classList.add('active'); }
+  if(speakCard) speakCard.classList.add('listening');
+
+  // hide previous result
+  const rb = document.getElementById('resultBlock');
+  if(rb){ rb.classList.remove('show','great','good','retry'); }
+
+  rec.onresult = (e) => {
+    const results = Array.from(e.results[0]);
+    const heard = results.map(r=>r.transcript.trim()).join(' | ');
+    const best = results[0].transcript.trim();
+    showPronResult(target, best, heard, langKey);
+  };
+
+  rec.onerror = (e) => {
+    resetMicUI();
+    const rb = document.getElementById('resultBlock');
+    if(rb){
+      rb.className='result-block retry show';
+      rb.querySelector('.result-label').textContent = '⚠️ Could not hear you';
+      rb.querySelector('.result-score').textContent = '';
+      rb.querySelector('.result-heard').innerHTML = `Error: ${e.error}. Check mic permissions and try again.`;
+      rb.querySelector('.score-bar-fill').style.width='0%';
+    }
+  };
+
+  rec.onend = () => { resetMicUI(); };
+
+  try{ rec.start(); } catch(e){ resetMicUI(); }
+}
+
+function stopRecording(){
+  if(speakState.recognition){ try{ speakState.recognition.stop(); }catch(e){} }
+  speakState.recording = false;
+  resetMicUI();
+}
+
+function resetMicUI(){
+  speakState.recording = false;
+  const micBtn = document.getElementById('micBtn');
+  const micLabel = document.getElementById('micLabel');
+  const waveform = document.getElementById('waveform');
+  const speakCard = document.getElementById('speakCard');
+  if(micBtn){ micBtn.classList.remove('recording'); micBtn.textContent='🎤'; }
+  if(micLabel) micLabel.textContent = 'TAP TO SPEAK';
+  if(waveform){ waveform.classList.remove('active'); waveform.classList.add('idle'); }
+  if(speakCard){ speakCard.classList.remove('listening'); }
+}
+
+function showPronResult(target, best, allHeard, langKey){
+  const score = pronunciationScore(target, best);
+  speakState.scores.push(score);
+
+  let tier, color, emoji;
+  if(score >= 80){ tier='great'; color='var(--green)'; emoji='🌟'; }
+  else if(score >= 50){ tier='good'; color='var(--gold)'; emoji='👍'; }
+  else{ tier='retry'; color='var(--rose)'; emoji='🔄'; }
+
+  const labels = {
+    great: ['Excellent!','Perfect!','Outstanding!','Nailed it!'],
+    good:  ['Good try!','Getting there!','Almost!','Keep going!'],
+    retry: ['Try again','Speak up','Once more','You\'ve got this!'],
+  };
+  const lbl = labels[tier][Math.floor(Math.random()*4)];
+
+  const rb = document.getElementById('resultBlock');
+  if(!rb) return;
+  rb.className = `result-block ${tier} show`;
+  rb.querySelector('.result-label').textContent = `${emoji} ${lbl}`;
+  rb.querySelector('.result-score').style.color = color;
+  rb.querySelector('.result-score').textContent = `${score}%`;
+  rb.querySelector('.score-bar-fill').style.background = color;
+  rb.querySelector('.score-bar-fill').style.width = score+'%';
+  rb.querySelector('.result-heard').innerHTML = `I heard: <strong>"${best}"</strong>${allHeard.includes('|')?' (or: '+allHeard+')'  :''}`;
+
+  const speakCard = document.getElementById('speakCard');
+  if(speakCard){ speakCard.classList.remove('listening'); speakCard.classList.add(tier==='great'?'success':''); }
+
+  if(score >= 80) addXP(20);
+  else if(score >= 50) addXP(8);
+}
+
+// Similarity score — character overlap + bonus for exact match
+function pronunciationScore(target, heard){
+  if(!heard) return 0;
+  const t = target.toLowerCase().replace(/[，。！？\s]/g,'');
+  const h = heard.toLowerCase().replace(/[，。！？\s]/g,'');
+  if(t === h) return 100;
+
+  // character-level similarity (works for CJK and romaji)
+  const tChars = [...t];
+  const hChars = [...h];
+  let matches = 0;
+  const used = new Array(hChars.length).fill(false);
+  for(const c of tChars){
+    const idx = hChars.findIndex((hc,i)=>!used[i]&&hc===c);
+    if(idx>=0){ matches++; used[idx]=true; }
+  }
+  const precision = matches / Math.max(hChars.length,1);
+  const recall    = matches / Math.max(tChars.length,1);
+  const f1 = precision+recall > 0 ? 2*precision*recall/(precision+recall) : 0;
+
+  // length penalty — if wildly different length, cap score
+  const lenRatio = Math.min(tChars.length,hChars.length)/Math.max(tChars.length,hChars.length,1);
+  return Math.round(Math.min(99, f1*100*0.8 + lenRatio*20));
+}
+
+// ── BOOT ────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
